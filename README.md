@@ -12,19 +12,23 @@ It is a complete, self-contained, drop-in replacement for the original firmware.
 
 ## The Watch
 
-<a href="./doc/buttons.jpeg"><img src="doc/buttons.jpeg" style="width: 240px; max-width: 24%; max-height: 90vh" /></a>
-<img src="doc/02.jpeg" style="width: 240px; max-width: 24%; max-height: 90vh" />
-<img src="doc/03.jpeg" style="width: 240px; max-width: 24%; max-height: 90vh" />
-<img src="doc/04.jpeg" style="width: 240px; max-width: 24%; max-height: 90vh" />
+<div>
+<img src="doc/buttons.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/03.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/04.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
 
 ## Faces
 
-<img src="doc/06.jpeg" style="width: 240px; max-width: 45%; max-height: 90vh" />
-<img src="doc/07.jpeg" style="width: 240px; max-width: 45%; max-height: 90vh" />
-<img src="doc/08.jpeg" style="width: 240px; max-width: 45%; max-height: 90vh" />
-<img src="doc/10.jpeg" style="width: 240px; max-width: 45%; max-height: 90vh" />
-<img src="doc/19.jpeg" style="width: 240px; max-width: 45%; max-height: 90vh" />
-<img src="doc/14.jpeg" style="width: 240px; max-width: 45%; max-height: 90vh" />
+<div>
+<img src="doc/06.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/07.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/08.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/10.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/19.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/14.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
 
 ## Design Philosophy
 
@@ -54,35 +58,39 @@ Intentionally, this project does not include any on-watch settings screens or us
 
 ## Buttons
 
-<a href="./doc/buttons.jpeg"><img src="doc/buttons.jpeg" style="width: 480px; max-width: 95%; max-height: 90vh" /></a>
+<img src="doc/buttons.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 
 ## Weather
 
 The watch shows a weather forecast over the upcoming 12 hours. This is a simple, practical, human-ergonomics amount of time for planning ahead using a wrist watch.
 
-<a href="./doc/weather01.jpeg"><img src="doc/weather01.jpeg" style="width: 320px; max-width: 45%; max-height: 80vh" /></a>
-<a href="./doc/weather02.jpeg"><img src="doc/weather02.jpeg" style="width: 320px; max-width: 45%; max-height: 80vh" /></a>
+<div>
+<img src="doc/weather01.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/weather02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
 
 ## Timer Operation
 
 Press the left-bottom button to show the timers page:
 
-<img src="doc/11.jpeg" style="width: 240px; max-width: 45%; max-height: 90vh" />
+<img src="doc/11.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 
 Press the left-bottom button again to start a new timer, added to the bottom (D):
 
-<img src="doc/12.jpeg" style="width: 240px; max-width: 45%; max-height: 90vh" />
+<img src="doc/12.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 
 Press again for another timer (E):
 
-<img src="doc/14.jpeg" style="width: 240px; max-width: 45%; max-height: 90vh" />
+<img src="doc/14.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 
 Press-and-hold (2s) the left-bottom button to clear all timers and start over:
 
-<img src="doc/15.jpeg" style="width: 240px; max-width: 45%; max-height: 90vh" />
+<img src="doc/15.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 
 When the page is full, a button press will discard the oldest timer and start a new one at the bottom. All the other timers move up one slot, maintaining their letter-codes. In this example, A, which has been restarted, moves to the bottom. Then, on another press, B.
 
-<img src="doc/16.jpeg" style="width: 240px; max-width: 32%; max-height: 90vh" />
-<img src="doc/17.jpeg" style="width: 240px; max-width: 32%; max-height: 90vh" />
-<img src="doc/18.jpeg" style="width: 240px; max-width: 32%; max-height: 90vh" />
+<div>
+<img src="doc/16.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/17.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/18.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
