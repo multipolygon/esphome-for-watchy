@@ -1,0 +1,6 @@
+secrets.yaml
+.esphome
+.DS_Store
+*.ttf
+*.otf
+demo.yaml

@@ -1,0 +1,859 @@
+## Watchy ##
+
+# https://watchy.sqfmi.com/docs/hardware
+
+# esphome -s ID 1 run watchy.yaml --device=watchy1.local
+# esphome -s ID 1 run watchy.yaml --device=/dev/cu.usbserial-567F0083021
+
+# esphome -s ID 2 run watchy.yaml --device=watchy2.local
+# esphome -s ID 2 run watchy.yaml --device=/dev/cu.usbserial-57490230711
+
+esphome:
+  name: $NAME
+  includes:
+    - watchy.h
+  on_boot:
+    priority: 700
+    then:
+      - delay: 5ms
+      - pcf8563.read_time:
+      - delay: 5ms
+      - if:
+          condition:
+            binary_sensor.is_on: timer_button
+          then:
+            script.execute: start_new_timer
+      - lambda: |-
+          id(weather_age_hours) = (id(pcf).utcnow().timestamp - id(weather_age)) / (60*60);
+          if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_TIMER) {
+            ESP_LOGI("watchy", "Keep awake mode.");
+            id(keep_awake) = true;
+            id(wifi_id).enable(); // Optional
+          }
+          if ((id(pcf).now().hour == 0 && id(pcf).now().minute == 0) || !id(ntp).now().is_valid()) {
+            ESP_LOGI("watchy", "Update clock from NTP.");
+            id(updating_time) = true;
+            id(wifi_id).enable();
+          }
+          if (id(pcf).now().hour % 3 == 0 && id(pcf).now().minute == 0) {
+            ESP_LOGI("watchy", "Update weather.");
+            id(updating_weather) = true;
+            id(wifi_id).enable();
+          }
+      - component.update: sunrise
+      - component.update: sunset
+      - component.update: battery
+      - delay: 5ms
+      - script.execute: update_glass
+      - if:
+          condition:
+            lambda: return id(keep_awake) || id(pcf).now().hour == 0;
+          then:
+            - switch.turn_on: buzzer
+            - delay: 100ms
+      - switch.turn_off: buzzer
+      - script.execute: go_to_sleep
+
+display:
+  # Configuration for the display
+  # https://esphome.io/components/display/
+  # https://esphome.io/components/display/waveshare_epaper.html
+  # https://www.good-display.com/product/206.html
+  # https://www.e-paper-display.com/products_detail/productId=455.html
+  - id: glass
+    platform: waveshare_epaper
+    model: 1.54inv2
+    cs_pin: 5
+    dc_pin: 10
+    busy_pin: 19
+    reset_pin: 9
+    update_interval: never
+    # Problem: full_update_every does not work as expected because esphome code will do a full update on every boot up.
+    # Solution: Edited `waveshare_epaper.h` and initialise to 1 instead of 0: `uint32_t at_update_{1};`
+    # See: `external_components` near the bottom.
+    full_update_every: 1000
+    # Duration for the display reset operation. Defaults to 200ms. Setting this value to 2ms may resolve issues with newer e-Paper Driver modules (e.g. Rev 2.1).
+    reset_duration: 2ms # ?????
+    pages:
+      - id: digital_clock_page
+        lambda: |-
+          auto w = it.get_width();
+          auto h = it.get_height();
+
+          // Date //
+          it.strftime(w/2, 0, id(date_font), TextAlign::TOP_CENTER, "%a %d %b", id(pcf).now());
+
+          // Time //
+          it.print(w/2, h/2-5, id(time_font), TextAlign::CENTER, ":");
+          it.printf(w/2-10, h/2, id(time_font), TextAlign::CENTER_RIGHT, "%d", id(pcf).now().hour);
+          it.printf(w/2+10, h/2, id(time_font), TextAlign::CENTER_LEFT, "%02d", id(pcf).now().minute);
+
+          // Weather //
+          if (id(weather_temp_max) != -1000.0 && id(weather_age_hours) <= 12) {
+            it.printf(0, h, id(date_font), TextAlign::BOTTOM_LEFT, "%.0fc", id(weather_temp_max));
+          }
+          if (id(weather_code_0) != 0) {
+            it.printf(w, h, id(weather_icon_font), TextAlign::BOTTOM_RIGHT, "%s%s%s%s",
+              id(weather_age_hours) <= 3 ? weather_icon_map[id(weather_code_0)].c_str() : "",
+              id(weather_age_hours) <= 6 ? weather_icon_map[id(weather_code_1)].c_str() : "",
+              id(weather_age_hours) <= 9 ? weather_icon_map[id(weather_code_2)].c_str() : "",
+              id(weather_age_hours) <= 12 ? weather_icon_map[id(weather_code_3)].c_str() : ""
+            );
+          }
+
+          // Wifi status //
+          it.printf(w/2, h/2+46, id(icon_font), TextAlign::CENTER,
+            "%s",
+            id(wifi_id).is_disabled() ? "" : id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON"
+          );
+
+      - &clockface
+        id: circular_12hour_clock_page
+        lambda: |-
+          auto w = it.get_width();
+          auto h = it.get_height();
+          const bool n = id(page) == 1;
+
+          // Center Dot //
+          it.filled_circle(w/2, w/2, 5);
+
+          // Big Marks //
+          it.print(w, h/2, id(date_font), TextAlign::CENTER_RIGHT, n ? "3" : "III");
+          it.print(w/2, h+6, id(date_font), TextAlign::BOTTOM_CENTER, n ? "6" : "VI");
+          it.print(0, h/2, id(date_font), TextAlign::CENTER_LEFT, n ? "9" : "IX");
+          it.print(w/2, 0-8, id(date_font), TextAlign::TOP_CENTER, n ? "12" : "XII");
+
+          // Small Marks //
+          it.print(getClkX(1), getClkY(1), id(small_font), TextAlign::CENTER, n ? "1" : "I");
+          it.print(getClkX(2), getClkY(2), id(small_font), TextAlign::CENTER, n ? "2" : "II");
+          it.print(getClkX(4), getClkY(4), id(small_font), TextAlign::CENTER, n ? "4" : "IV");
+          it.print(getClkX(5), getClkY(5), id(small_font), TextAlign::CENTER, n ? "5" : "V");
+          it.print(getClkX(7), getClkY(7), id(small_font), TextAlign::CENTER, n ? "7" : "VII");
+          it.print(getClkX(8), getClkY(8), id(small_font), TextAlign::CENTER, n ? "8" : "VIII");
+          it.print(getClkX(10), getClkY(10), id(small_font), TextAlign::CENTER, n ? "10" : "X");
+          it.print(getClkX(11), getClkY(11), id(small_font), TextAlign::CENTER, n ? "11" : "XI");
+
+          // Weather Temp //
+          if (id(weather_temp_max) != -1000.0 && id(weather_age_hours) <= 12) {
+            it.printf(w/2, h/2 - 30, id(small_font), TextAlign::BOTTOM_CENTER, "%.0f to %.0fc", id(weather_temp_min), id(weather_temp_max));
+          }
+
+          // Date //
+          it.strftime(w/2, h/2 + 30, id(small_font), TextAlign::TOP_CENTER, "%a %d %b", id(pcf).now());
+
+          // Hour Hand //
+          double hr = ((id(pcf).now().hour % 12 + id(pcf).now().minute / 60.0) / 12.0 * 360.0 - 90.0) * (M_PI / 180.0);
+          for (int x=-2; x<=2; ++x) {
+            for (int y=-2; y<=2; ++y) {
+              it.line(w/2 +x, h/2 +y, w/2.0 + w/4.0 * cos(hr) +x, h/2.0 + h/4.0 * sin(hr) +y);
+            }
+          }
+
+          // Minute Hand //
+          double mn = (id(pcf).now().minute / 60.0 * 360.0 - 90.0) * (M_PI / 180.0);
+          for (int x=-2; x<=2; ++x) {
+            for (int y=-1; y<=1; ++y) {
+              it.line(w/2 +x, h/2 +y, w/2.0 + w/2.5 * cos(mn) +x, h/2.0 + h/2.5 * sin(mn) +y);
+            }
+          }
+
+          // Weather Icons //
+          if (id(weather_age_hours) <= 3) {
+            it.printf(w, 0, id(weather_icon_font), TextAlign::TOP_RIGHT, "%s", weather_icon_map[rotateWeatherCode(0, id(pcf).now().hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+          }
+          if (id(weather_age_hours) <= 6) {
+            it.printf(w, h, id(weather_icon_font), TextAlign::BOTTOM_RIGHT, "%s", weather_icon_map[rotateWeatherCode(1, id(pcf).now().hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+          }
+          if (id(weather_age_hours) <= 9) {
+            it.printf(0, h, id(weather_icon_font), TextAlign::BOTTOM_LEFT, "%s", weather_icon_map[rotateWeatherCode(2, id(pcf).now().hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+          }
+          if (id(weather_age_hours) <= 12) {
+            it.printf(0, 0, id(weather_icon_font), TextAlign::TOP_LEFT, "%s", weather_icon_map[rotateWeatherCode(3, id(pcf).now().hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+          }
+
+          // Wifi status //
+          it.printf(w*3/4, h/2, id(icon_font), TextAlign::CENTER,
+            "%s",
+            id(wifi_id).is_disabled() ? "" : id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON"
+          );
+
+      - <<: *clockface
+        id: circular_roman_clock_page
+
+      - id: timers_page
+        lambda: |-
+          auto w = it.get_width();
+          auto h = it.get_height();
+
+          it.print(0, 0, id(weather_icon_font), TextAlign::TOP_LEFT, "$TIMER_ICON");
+
+          int l = 0;
+          int lh = 32;
+          auto f = id(date_font);
+
+          it.printf(w/2, l, f, TextAlign::TOP_CENTER, "%d:%02d", id(pcf).now().hour, id(pcf).now().minute);
+          l += lh * 1.2;
+
+          const std::string abcde = "ABCDE";
+
+          for (int i=id(active_timer)+1; i<id(active_timer)+6; ++i) {
+            int x = i % 5;
+            if (id(timers)[x] != 0) {
+              it.printf(0, l, f, TextAlign::TOP_LEFT, "%c:", abcde[x]);
+              it.printf(w, l, f, TextAlign::TOP_RIGHT, "%02d:%02d:%02d",
+                (id(pcf).utcnow().timestamp - id(timers)[x]) / (60*60),
+                ((id(pcf).utcnow().timestamp - id(timers)[x]) / 60) % 60,
+                id(keep_awake) ? ((id(pcf).utcnow().timestamp - id(timers)[x]) % 60) / 10 * 10 : 0
+              );
+              l += lh;
+            }
+          }
+
+          // Wifi status //
+          it.printf(w, 0, id(icon_font), TextAlign::TOP_RIGHT,
+            "%s",
+            id(wifi_id).is_disabled() ? "" : id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON"
+          );
+
+      - id: ha_page
+        lambda: |-
+          auto w = it.get_width();
+          auto h = it.get_height();
+
+          it.print(0, 0, id(weather_icon_font), TextAlign::TOP_LEFT, "$HA_ICON");
+
+          int l = 0;
+          const int lh = 34;
+          const int lo = 38;
+
+          it.printf(w/2, l, id(date_font), TextAlign::TOP_CENTER, "%d:%02d", 12, 34);
+          l += lh * 1.5;
+
+          it.print(0, l, id(small_font), TextAlign::CENTER_LEFT, "Add your own code here.");
+          l += lh;
+
+          // Wifi status //
+          it.printf(w, 0, id(icon_font), TextAlign::TOP_RIGHT,
+            "%s",
+            id(wifi_id).is_disabled() ? "" : id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON"
+          );
+
+      - id: system_info_page
+        lambda: |-
+          auto w = it.get_width();
+          auto h = it.get_height();
+
+          const char* sky[] = {
+            "$STAR",
+            "$SHSTAR",
+            "$STARS",
+            "$HELI",
+            "$BALLOON",
+            "$BIRD",
+            "$SPINV",
+            "$ISS",
+            "$UFO",
+            "$SATEL"
+          };
+          const int skyLen = 10;
+
+          if (id(weather_code_0) != 0) {
+            it.printf(w/2, 0, id(weather_icon_font), TextAlign::TOP_CENTER, "%s%s%s%s%s",
+              weather_icon_map[id(weather_code_0)].c_str(),
+              weather_icon_map[id(weather_code_1)].c_str(),
+              sky[random(skyLen)],
+              weather_icon_map[id(weather_code_2)].c_str(),
+              weather_icon_map[id(weather_code_3)].c_str()
+            );
+          }
+
+          int l = 44;
+          int lh = 18;
+          auto f = id(small_font);
+
+          it.printf(0, l, f, TextAlign::TOP_LEFT, "%d:%02d", id(pcf).now().hour, id(pcf).now().minute);
+          l += lh;
+
+          it.strftime(0, l, f, TextAlign::TOP_LEFT , "%a %d %b", id(pcf).now());
+          l += lh;
+
+          if (id(weather_temp_max) != -1000.0) {
+            it.printf(0, l, f, TextAlign::TOP_LEFT, "%.0f to %.0fc", id(weather_temp_min), id(weather_temp_max));
+          }
+          l += lh;
+
+          it.printf(0, l, f, TextAlign::TOP_LEFT, "Wifi: (%d) %s", id(wifi_id).wifi_rssi(), id(wifi_id).wifi_ssid().c_str());
+          l += lh;
+
+          it.printf(0, l, f, TextAlign::TOP_LEFT, "Sun: %s to %s", id(sunrise).state.c_str(), id(sunset).state.c_str());
+          l += lh;
+
+          it.printf(0, l, f, TextAlign::TOP_LEFT, "Battery: %.02f V", id(battery).state);
+          l += lh;
+
+          const char* city[] = {
+            "$CITY",
+            "$CITY2",
+            "$CITY3",
+            "$CITY",
+            "$CITY2",
+            "$CITY3",
+            "$CITY",
+            "$CITY2",
+            "$CITY2",
+            "$CITY3",
+            "$CITY",
+            "$CITY",
+            "$CITY2",
+            "$CITY3",
+            "$CITY",
+            "$CITY2",
+            "$CITY3",
+            "$CITY",
+            "$CITY2",
+            "$CITY3",
+            "$CASTLE",
+            "$DINO",
+            "$HOSP",
+            "$TREE",
+          };
+          const int cityLen = 24;
+
+          for (int x=-1*random(10); x<=w+20; x+=24) {
+            it.printf(x, h+6, id(weather_icon_font), TextAlign::BOTTOM_LEFT, "%s", city[random(cityLen)]);
+          }
+
+binary_sensor:
+  ## Left Top ##
+
+  - id: power_on_button
+    pin:
+      number: $BUTTON_LEFT_TOP
+      allow_other_uses: true
+    platform: gpio
+    on_press:
+      - lambda: id(counter) = 0;
+
+  - id: deep_sleep_button
+    pin:
+      number: $BUTTON_LEFT_TOP
+      allow_other_uses: true
+    platform: gpio
+    filters:
+      - delayed_on: 2s
+    on_press:
+      - wifi.disable:
+      - component.update: glass
+      - deep_sleep.enter:
+
+  ## Left Bottom ##
+
+  - id: timer_button
+    pin:
+      number: $BUTTON_LEFT_BOTTOM
+      allow_other_uses: true
+    platform: gpio
+    on_press:
+      - lambda: id(counter) = 0;
+      - if:
+          condition:
+            lambda: return id(page) != $TIMERS_PAGE;
+          then:
+            - lambda: id(page) = $TIMERS_PAGE;
+            - script.execute: update_glass
+          else:
+            script.execute: start_new_timer
+
+  - id: reset_timers_button
+    pin:
+      number: $BUTTON_LEFT_BOTTOM
+      allow_other_uses: true
+    platform: gpio
+    filters:
+      - delayed_on: 2s
+    on_press:
+      - lambda: |-
+          id(page) = $TIMERS_PAGE;
+          id(active_timer) = 0;
+          id(timers)[0] = id(pcf).utcnow().timestamp;
+          id(timers)[1] = 0;
+          id(timers)[2] = 0;
+          id(timers)[3] = 0;
+          id(timers)[4] = 0;
+      - script.execute: update_glass
+
+  ## Right Top ##
+
+  - id: page_cycle_button
+    platform: gpio
+    pin:
+      number: $BUTTON_RIGHT_TOP
+      allow_other_uses: false
+    on_press:
+      - lambda: |-
+          id(counter) = 0;
+          id(page) = id(page) >= 1000 ? 0 : ((id(page) + 1) % $PAGE_COUNT);
+      - script.execute: update_glass
+
+  ## Right Bottom ##
+
+  - id: right_buttom_button
+    pin:
+      number: $BUTTON_RIGHT_BOTTOM
+      allow_other_uses: false
+    platform: gpio
+    on_press:
+      - lambda: |-
+          id(counter) = 0;
+          id(page) = $HA_PAGE;
+      - script.execute: update_glass
+
+wifi:
+  # https://esphome.io/components/wifi.html
+  id: wifi_id
+  power_save_mode: HIGH
+  networks:
+    - ssid: $WIFI_SSID
+      password: $WIFI_PASSWORD
+    - ssid: $RC_WIFI_SSID
+      password: $RC_WIFI_PASSWORD
+    - ssid: $PH_WIFI_SSID
+      password: $PH_WIFI_PASSWORD
+  # fast_connect: true
+  reboot_timeout: 0s
+  enable_on_boot: false
+  on_connect:
+    - component.update: glass
+    - lambda: |-
+        if (id(updating_time)) {
+          id(ntp).update();
+        }
+    - if:
+        condition:
+          lambda: return id(updating_weather) || id(weather_age) == 0 || id(weather_age_hours) >= 3;
+        then:
+          script.execute: update_weather
+
+script:
+  - id: update_glass
+    then:
+      - display.page.show: !lambda |-
+          if (id(page) == $TIMERS_PAGE) {
+            return id(timers_page);
+          } else if (id(page) == $HA_PAGE) {
+            return id(ha_page);
+          } else if (id(page) == 0) {
+            return id(digital_clock_page);
+          } else if (id(page) == 1) {
+            return id(circular_12hour_clock_page);
+          } else if (id(page) == 2) {
+            return id(circular_roman_clock_page);
+          } else if (id(page) == 3) {
+            return id(system_info_page);
+          } else {
+            ESP_LOGE("watchy", "Invalid page id!");
+            return id(digital_clock_page);
+          }
+      - component.update: glass
+
+  - id: start_new_timer
+    then:
+      - lambda: |-
+          ESP_LOGI("watchy", "Starting new timer.");
+          id(page) = $TIMERS_PAGE;
+          id(active_timer) = (id(active_timer) + 1) % 5;
+          id(timers)[id(active_timer)] = id(pcf).utcnow().timestamp;
+      - script.execute: update_glass
+
+  - id: update_weather
+    mode: single
+    then:
+      - lambda: ESP_LOGI("watchy", "Weather HTTP request.");
+      - http_request.get:
+          url: http://api.openweathermap.org/data/2.5/forecast?cnt=4&id=$CITY_ID&units=$UNITS&lang=$LANG&appid=$WEATHER_KEY
+          headers:
+            Content-Type: application/json
+          verify_ssl: false
+          on_response:
+            then:
+              - lambda: id(updating_weather) = false;
+              - if:
+                  condition:
+                    lambda: |-
+                      ESP_LOGI("watchy", "Weather status %d %ums.", status_code, duration_ms);
+                      return status_code == 200;
+                  then:
+                    - lambda: |-
+                        json::parse_json(id(http_request_data).get_string(), [](JsonObject root) {
+                          id(weather_age) = id(pcf).utcnow().timestamp;
+                          id(weather_age_hours) = 0;
+
+                          id(weather_code_0) = weatherCode(root["list"][0]["weather"][0]["id"], root["list"][0]["weather"][0]["icon"]);
+                          id(weather_code_1) = weatherCode(root["list"][1]["weather"][0]["id"], root["list"][0]["weather"][0]["icon"]);
+                          id(weather_code_2) = weatherCode(root["list"][2]["weather"][0]["id"], root["list"][0]["weather"][0]["icon"]);
+                          id(weather_code_3) = weatherCode(root["list"][3]["weather"][0]["id"], root["list"][0]["weather"][0]["icon"]);
+
+                          id(weather_temp_max) = max(id(weather_temp_max), float(root["list"][0]["main"]["temp_max"]));
+                          id(weather_temp_max) = max(id(weather_temp_max), float(root["list"][1]["main"]["temp_max"]));
+                          id(weather_temp_max) = max(id(weather_temp_max), float(root["list"][2]["main"]["temp_max"]));
+                          id(weather_temp_max) = max(id(weather_temp_max), float(root["list"][3]["main"]["temp_max"]));
+
+                          id(weather_temp_min) = min(id(weather_temp_min), float(root["list"][0]["main"]["temp_min"]));
+                          id(weather_temp_min) = min(id(weather_temp_min), float(root["list"][1]["main"]["temp_min"]));
+                          id(weather_temp_min) = min(id(weather_temp_min), float(root["list"][2]["main"]["temp_min"]));
+                          id(weather_temp_min) = min(id(weather_temp_min), float(root["list"][3]["main"]["temp_min"]));
+                        });
+                    - delay: 5ms
+                    - component.update: glass
+              - script.execute: go_to_sleep
+
+  - id: go_to_sleep
+    mode: restart
+    then:
+      if:
+        condition:
+          lambda: return !id(updating_time) && !id(updating_weather) && !id(keep_awake);
+        then:
+          deep_sleep.enter:
+
+time:
+  # https://esphome.io/components/time/
+  # https://esphome.io/components/time/pcf8563.html
+  - platform: pcf8563
+    id: pcf
+    update_interval: never
+    address: 0x51
+    on_time:
+      - seconds: 0
+        then:
+          - lambda: id(counter) += 1;
+          - if:
+              condition:
+                lambda: return id(keep_awake);
+              then:
+                - if:
+                    condition:
+                      lambda: return id(counter) <= 5;
+                    then:
+                      component.update: glass
+                    else:
+                      - wifi.disable:
+                      - component.update: glass
+                      - deep_sleep.enter:
+              else:
+                - if:
+                    condition:
+                      lambda: return id(counter) > 2;
+                    then:
+                      deep_sleep.enter:
+
+      - seconds: "/10"
+        then:
+          if:
+            condition:
+              lambda: return id(page) == $TIMERS_PAGE;
+            then:
+              component.update: glass
+
+  # https://esphome.io/components/time/sntp
+  - id: ntp
+    platform: sntp
+    on_time_sync:
+      if:
+        condition:
+          - wifi.connected:
+          - lambda: "return id(updating_time) && id(ntp).now().is_valid();"
+        then:
+          - lambda: "id(updating_time) = false;"
+          - pcf8563.write_time:
+          - lambda: "id(glass).set_full_update_every(1);" # epaper full wipe clean
+          - component.update: glass
+          - component.update: glass
+          - script.execute: go_to_sleep
+
+deep_sleep:
+  # https://esphome.io/components/deep_sleep.html
+  sleep_duration: 1min
+  esp32_ext1_wakeup:
+    mode: ANY_HIGH
+    pins:
+      - number: $BUTTON_LEFT_TOP
+        allow_other_uses: true
+      - number: $BUTTON_LEFT_BOTTOM
+        allow_other_uses: true
+      # - number: $BUTTON_RIGHT_TOP
+      #   allow_other_uses: true
+      # - number: $BUTTON_RIGHT_BOTTOM
+      #   allow_other_uses: true
+
+globals:
+  - id: counter
+    type: int
+    initial_value: "0"
+  - id: keep_awake
+    type: boolean
+    initial_value: "false"
+  - id: updating_time
+    type: boolean
+    initial_value: "false"
+  - id: updating_weather
+    type: boolean
+    initial_value: "false"
+  - id: weather_age_hours
+    type: int
+    initial_value: "0"
+  ## Persistent ##
+  - id: page
+    type: int
+    restore_value: yes
+    initial_value: "0"
+  - id: weather_age
+    type: int
+    restore_value: yes
+    initial_value: "0"
+  - id: weather_code_0
+    type: int
+    restore_value: yes
+    initial_value: "0"
+  - id: weather_code_1
+    type: int
+    restore_value: yes
+    initial_value: "0"
+  - id: weather_code_2
+    type: int
+    restore_value: yes
+    initial_value: "0"
+  - id: weather_code_3
+    type: int
+    restore_value: yes
+    initial_value: "0"
+  - id: weather_temp_min
+    type: float
+    restore_value: yes
+    initial_value: "1000.0"
+  - id: weather_temp_max
+    type: float
+    restore_value: yes
+    initial_value: "-1000.0"
+  - id: active_timer
+    type: int
+    restore_value: yes
+    initial_value: "0"
+  - id: timers
+    type: int[5]
+    restore_value: yes
+
+substitutions:
+  <<: !include secrets.yaml
+  NAME: watchy$ID
+  #### WEATHER ####
+  CITY_ID: "2158177" # Melbourne/Australia
+  UNITS: metric
+  LANG: en
+  #### PAGES ####
+  PAGE_COUNT: "4"
+  TIMERS_PAGE: "1000"
+  HA_PAGE: "2000"
+  #### PINS ####
+  BUTTON_LEFT_TOP: "25"
+  BUTTON_LEFT_BOTTOM: "26"
+  BUTTON_RIGHT_TOP: "35"
+  BUTTON_RIGHT_BOTTOM: "4"
+  RTC_INTERRUPT: "27"
+  BUZZER: "13"
+  BATT_ADC: "34"
+  #### ICONS ####
+  AWAKE_ICON: "󰇵"
+  SLEEP_ICON: "󰒲"
+  OK_WIFI_ICON: "󰖩"
+  NO_WIFI_ICON: "󰖪"
+  OK_NTP_ICON: "󰸞"
+  NO_NTP_ICON: "󱎘"
+  TIMER_ICON: "󰔛"
+  HA_ICON: "󰟐"
+  BRIGHT_LIGHT_ICON: "󰃞"
+  LOW_LIGHT_ICON: "󰃟"
+  NIGHT_LIGHT_ICON: "󰃝"
+  LIGHTBULB_ON_ICON: "󰌵"
+  LIGHTBULB_OFF_ICON: "󰌶"
+  # City:
+  CITY: "󰅆"
+  CITY2: "󰨶"
+  CITY3: "󰦑"
+  CASTLE: "󰄚"
+  DINO: "󱍢"
+  HOUSE: "󰴕"
+  HOSP: "󰋡"
+  TREE: "󰐅"
+  CHESS: "󰡛"
+  TRUCK: "󰔽"
+  # Sky:
+  STAR: "󰦥"
+  SHSTAR: "󱝁"
+  STARS: "󱕅"
+  HELI: "󰫂"
+  BALLOON: "󰀜"
+  BIRD: "󱗆"
+  SPINV: "󰯉"
+  ISS: "󱎃"
+  UFO: "󱃅"
+  SATEL: "󰑱"
+
+font:
+  # https://freefonts.co/fonts/futura-bold
+  # https://github.com/Templarian/MaterialDesign-Webfont/tree/master/fonts
+
+  - id: time_font
+    file: "fonts/Futura Bold.otf"
+    size: 64
+
+  - id: date_font
+    file: "fonts/Futura Bold.otf"
+    size: 28
+
+  - id: small_font
+    file: "fonts/Futura Bold.otf"
+    size: 14
+
+  - file: fonts/materialdesignicons-webfont.ttf
+    id: icon_font
+    size: 24
+    glyphs:
+      - "$AWAKE_ICON"
+      - "$SLEEP_ICON"
+      - "$OK_WIFI_ICON"
+      - "$NO_WIFI_ICON"
+      - "$OK_NTP_ICON"
+      - "$NO_NTP_ICON"
+
+  - id: weather_icon_font
+    file: fonts/materialdesignicons-webfont.ttf
+    size: 36
+    glyphs:
+      - "\U000F0590" # weather-cloudy
+      - "\U000F0F2F" # weather-cloudy-alert
+      - "\U000F0E6E" # weather-cloudy-arrow-right
+      - "\U000F0591" # weather-fog
+      - "\U000F0592" # weather-hail
+      - "\U000F0F30" # weather-hazy
+      - "\U000F0898" # weather-hurricane
+      - "\U000F0593" # weather-lightning
+      - "\U000F067E" # weather-lightning-rainy
+      - "\U000F0594" # weather-night
+      - "\U000F0F31" # weather-night-partly-cloudy
+      - "\U000F0595" # weather-partly-cloudy
+      - "\U000F0F32" # weather-partly-lightning
+      - "\U000F0F33" # weather-partly-rainy
+      - "\U000F0F34" # weather-partly-snowy
+      - "\U000F0F35" # weather-partly-snowy-rainy
+      - "\U000F0596" # weather-pouring
+      - "\U000F0597" # weather-rainy
+      - "\U000F0598" # weather-snowy
+      - "\U000F0F36" # weather-snowy-heavy
+      - "\U000F067F" # weather-snowy-rainy
+      - "\U000F0599" # weather-sunny
+      - "\U000F0F37" # weather-sunny-alert
+      - "\U000F14E4" # weather-sunny-off
+      - "\U000F059A" # weather-sunset
+      - "\U000F059B" # weather-sunset-down
+      - "\U000F059C" # weather-sunset-up
+      - "\U000F0F38" # weather-tornado
+      - "\U000F059D" # weather-windy
+      - "\U000F059E" # weather-windy-variant
+      - "\U000F0026" # alert
+      # Moon:
+      - "\U000F0F61" # moon-first-quarter
+      - "\U000F0F62" # moon-full
+      - "\U000F0F63" # moon-last-quarter
+      - "\U000F0F64" # moon-new
+      - "\U000F0F65" # moon-waning-crescent
+      - "\U000F0F66" # moon-waning-gibbous
+      - "\U000F0F67" # moon-waxing-crescent
+      - "\U000F0F68" # moon-waxing-gibbous
+      # City:
+      - "$CITY"
+      - "$CITY2"
+      - "$CITY3"
+      - "$CASTLE"
+      - "$DINO"
+      - "$HOUSE"
+      - "$HOSP"
+      - "$TREE"
+      - "$CHESS"
+      - "$TRUCK"
+      # Sky:
+      - "$STAR"
+      - "$SHSTAR"
+      - "$STARS"
+      - "$HELI"
+      - "$BALLOON"
+      - "$BIRD"
+      - "$SPINV"
+      - "$ISS"
+      - "$UFO"
+      - "$SATEL"
+      # Other:
+      - "$TIMER_ICON"
+      - "$HA_ICON"
+      - "$BRIGHT_LIGHT_ICON"
+      - "$LOW_LIGHT_ICON"
+      - "$NIGHT_LIGHT_ICON"
+      - "$LIGHTBULB_ON_ICON"
+      - "$LIGHTBULB_OFF_ICON"
+
+esp32:
+  board: esp32dev
+  partitions: min_spiffs.csv
+
+logger:
+  level: INFO
+
+sensor:
+  - platform: adc
+    pin: $BATT_ADC
+    id: battery
+    update_interval: never
+
+switch:
+  - id: buzzer
+    pin: $BUZZER
+    platform: gpio
+
+i2c:
+  scan: true
+  sda: 21
+  scl: 22
+
+spi:
+  mosi_pin: 23
+  clk_pin: 18
+
+sun:
+  id: sol
+  latitude: $LATITUDE
+  longitude: $LONGITUDE
+
+text_sensor:
+  - platform: sun
+    id: sunrise
+    type: sunrise
+    format: "%H:%M"
+  - platform: sun
+    id: sunset
+    type: sunset
+    format: "%H:%M"
+
+ota:
+  password: $OTA_PASSWORD
+
+http_request:
+  id: http_request_data
+
+external_components:
+  - components: [waveshare_epaper]
+    source:
+      # type: local
+      # path: ../esphome/esphome/components
+      type: git
+      url: https://github.com/multipolygon/esphome
+      ref: dev
