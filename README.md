@@ -10,6 +10,8 @@ https://esphome.io/
 
 It is a complete, self-contained, drop-in replacement for the original firmware.
 
+[./watchy.yaml](./watchy.yaml)
+
 ## The Watch
 
 <div>
@@ -34,7 +36,7 @@ It is a complete, self-contained, drop-in replacement for the original firmware.
 
 ### Low Power Usage
 
-A low-distraction, low-interaction, passive device.
+A low-distraction, low-interaction, unobtrusive and wearable device.
 
 This is primarily a watch, for showing the time, with a few extra "read-only", "at-a-glance" watch-like complications such as a weather forecast.
 
