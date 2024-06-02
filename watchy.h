@@ -94,10 +94,10 @@ std::map<int, std::string> weather_icon_map{
     {1804, cloudy},              // overcast clouds: 85-100%
 };
 
-int weatherCode(int code, const std::string &icon)
+int weatherCode(int code, const std::string &daynight)
 {
   // ESP_LOGE("cal", "%d, %s, %c", code, icon, icon.back());
-  if (code >= 800 && code < 900 && !icon.empty() && icon.back() == 'n')
+  if (code >= 800 && code < 900 && !daynight.empty() && daynight.back() == 'n')
   {
     return 1000 + code;
   }

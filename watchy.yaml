@@ -8,6 +8,12 @@
 # esphome -s ID 2 run watchy.yaml --device=watchy2.local
 # esphome -s ID 2 run watchy.yaml --device=/dev/cu.usbserial-57490230711
 
+# esphome -s ID 3 run watchy.yaml --device=watchy3.local
+# esphome -s ID 3 run watchy.yaml --device=/dev/cu.usbserial-57490229431
+
+# esphome -s ID 4 run watchy.yaml --device=watchy4.local
+# esphome -s ID 3 run watchy.yaml --device=/dev/cu.usbserial-57490231491
+
 esphome:
   name: $NAME
   includes:
@@ -22,14 +28,18 @@ esphome:
           id(weather_age_hours) = (id(pcf).utcnow().timestamp - id(weather_age)) / (60*60);
 
           const auto now = id(pcf).now();
-          id(chime) = (now.hour ==  7 && now.minute == 0)
-                   || (now.hour ==  8 && now.minute == 0)
+          id(chime) = (now.hour ==  8 && now.minute == 0)
                    || (now.hour == 16 && now.minute == 0)
                    ;
 
           if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_TIMER) {
             ESP_LOGI("watchy", "Keep awake mode.");
             id(keep_awake) = true;
+            id(glass).set_full_update_every(1); // epaper full wipe clean
+          }
+
+          if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED) {
+            id(wifi_id).enable();
           }
 
           if ((now.hour == 0 && now.minute == 0) || !id(ntp).now().is_valid()) {
@@ -53,7 +63,7 @@ esphome:
           then:
             - switch.turn_on: buzzer
             - script.execute: update_glass
-            - delay: !lambda "return id(chime) ? 50 : 10;"
+            # - delay: !lambda "return id(chime) ? 50 : 10;"
             - switch.turn_off: buzzer
           else:
             - script.execute: update_glass
@@ -113,6 +123,17 @@ display:
             id(chime) ? "$BELL_ICON" : "",
             id(wifi_id).is_disabled() ? (id(keep_awake) ? "$AWAKE_ICON" : "") : (id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON")
           );
+
+          // Active Timer //
+          if (id(timers)[id(active_timer)] != 0) {
+            int activeTimer = id(pcf).utcnow().timestamp - id(timers)[id(active_timer)];
+            if (activeTimer < 24 * 60 * 60) {
+              it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER,
+                "%dh %02dm",
+                (activeTimer) / (60*60), (activeTimer / 60) % 60
+              );
+            }
+          }
 
       - &clockface
         id: circular_12hour_clock_page
@@ -202,19 +223,31 @@ display:
           const auto f = id(date_font);
 
           it.printf(w/2, l, f, TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
-          l += lh * 1.2;
+          l += lh * 1.8;
 
           const std::string abcde = "ABCDE";
 
           for (int i=id(active_timer)+1; i<id(active_timer)+6; ++i) {
             int x = i % 5;
             if (id(timers)[x] != 0) {
-              it.printf(0, l, f, TextAlign::TOP_LEFT, "%c:", abcde[x]);
-              it.printf(w, l, f, TextAlign::TOP_RIGHT, "%02d:%02d:%02d",
+              it.printf(0, l, id(small_font), TextAlign::CENTER_LEFT, "%c", abcde[x]);
+
+              it.printf(w/2+8, l, f, TextAlign::CENTER_RIGHT, "%2d:%02d",
                 (utcnow.timestamp - id(timers)[x]) / (60*60),
-                ((utcnow.timestamp - id(timers)[x]) / 60) % 60,
-                id(keep_awake) ? ((utcnow.timestamp - id(timers)[x]) % 60) / 10 * 10 : 0
+                ((utcnow.timestamp - id(timers)[x]) / 60) % 60
               );
+
+              int y = (x + 1) % 5;
+              if (id(timers)[y] != 0 && id(timers)[y] >= id(timers)[x]) {
+                int split = id(timers)[y] - id(timers)[x];
+                if (split < 24 * 60 * 60) {
+                  it.printf(w, l, f, TextAlign::CENTER_RIGHT, "%2d:%02d",
+                    split / (60*60),
+                    (split / 60) % 60
+                  );
+                }
+              }
+              
               l += lh;
             }
           }
@@ -279,7 +312,7 @@ display:
             );
           }
 
-          int l = 44;
+          int l = 38;
           const int lh = 18;
           const auto f = id(small_font);
 
@@ -298,6 +331,9 @@ display:
           l += lh;
 
           it.printf(0, l, f, TextAlign::TOP_LEFT, "Sun: %s to %s", id(sunrise).state.c_str(), id(sunset).state.c_str());
+          l += lh;
+
+          it.print(0, l, f, TextAlign::TOP_LEFT, "ID: $ID");
           l += lh;
 
           it.printf(0, l, f, TextAlign::TOP_LEFT, "Battery: %.02f V", id(battery).state);
@@ -362,7 +398,7 @@ binary_sensor:
       allow_other_uses: true
     platform: gpio
     filters:
-      delayed_on: 2s
+      delayed_on: 1s
     on_press:
       - wifi.disable:
       - lambda: id(keep_awake) = false;
@@ -381,17 +417,30 @@ binary_sensor:
       min_length: 0ms
       max_length: 1s
       then:
-        - lambda: id(counter) = 0;
-        - if:
-            condition:
-              lambda: return id(page) != $TIMERS_PAGE;
-            then:
-              - lambda: id(page) = $TIMERS_PAGE;
-              - script.execute: update_glass
-            else:
-              script.execute: start_new_timer
+        - lambda: |-
+            id(counter) = 0;
+            id(page) = id(page) % 1000 + $TIMERS_PAGE;
+            id(active_timer) = (id(active_timer) + 1) % 5;
+            id(timers)[id(active_timer)] = id(pcf).utcnow().timestamp;
+        - script.execute: update_glass
 
-  - id: reset_timers_button
+  - id: reset_active_timer_button
+    pin:
+      number: $BUTTON_LEFT_BOTTOM
+      allow_other_uses: true
+    platform: gpio
+    filters:
+      delayed_on: 1s
+    on_press:
+      - lambda: |-
+          id(page) = id(page) % 1000 + $TIMERS_PAGE;
+          id(timers)[id(active_timer)] = 0;
+          if (id(active_timer) != 0) {
+            id(active_timer) -= 1;
+          }
+      - script.execute: update_glass
+
+  - id: reset_all_timers_button
     pin:
       number: $BUTTON_LEFT_BOTTOM
       allow_other_uses: true
@@ -400,7 +449,7 @@ binary_sensor:
       delayed_on: 2s
     on_press:
       - lambda: |-
-          id(page) = $TIMERS_PAGE;
+          id(page) = id(page) % 1000 + $TIMERS_PAGE;
           id(active_timer) = 0;
           id(timers)[0] = id(pcf).utcnow().timestamp;
           id(timers)[1] = 0;
@@ -422,7 +471,7 @@ binary_sensor:
       then:
         - lambda: |-
             id(counter) = 0;
-            id(page) = id(page) >= 1000 ? 0 : ((id(page) + 1) % $PAGE_COUNT);
+            id(page) = id(page) >= 1000 ? id(page) % 1000 : ((id(page) + 1) % $PAGE_COUNT);
         - script.execute: update_glass
 
   - id: update_weather_button
@@ -447,7 +496,7 @@ binary_sensor:
     on_press:
       - lambda: |-
           id(counter) = 0;
-          id(page) = $HA_PAGE;
+          id(page) = id(page) % 1000 + $HA_PAGE;
       - script.execute: update_glass
 
 wifi:
@@ -480,9 +529,9 @@ script:
   - id: update_glass
     then:
       - display.page.show: !lambda |-
-          if (id(page) == $TIMERS_PAGE) {
+          if (id(page) - id(page) % 1000 == $TIMERS_PAGE) {
             return id(timers_page);
-          } else if (id(page) == $HA_PAGE) {
+          } else if (id(page) - id(page) % 1000 == $HA_PAGE) {
             return id(ha_page);
           } else if (id(page) == 0) {
             return id(digital_clock_page);
@@ -497,15 +546,7 @@ script:
             return id(digital_clock_page);
           }
       - component.update: glass
-
-  - id: start_new_timer
-    then:
-      - lambda: |-
-          ESP_LOGI("watchy", "Starting new timer.");
-          id(page) = $TIMERS_PAGE;
-          id(active_timer) = (id(active_timer) + 1) % 5;
-          id(timers)[id(active_timer)] = id(pcf).utcnow().timestamp;
-      - script.execute: update_glass
+      - lambda: "id(glass).set_full_update_every(1000);" # epaper full wipe clean
 
   - id: update_weather
     mode: single
@@ -518,10 +559,10 @@ script:
           verify_ssl: false
           on_response:
             then:
-              - lambda: id(updating_weather) = false;
               - if:
                   condition:
                     lambda: |-
+                      id(updating_weather) = false;
                       ESP_LOGI("watchy", "Weather status %d %ums.", status_code, duration_ms);
                       return status_code == 200;
                   then:
@@ -530,10 +571,10 @@ script:
                           id(weather_age) = id(pcf).utcnow().timestamp;
                           id(weather_age_hours) = 0;
 
-                          id(weather_code_0) = weatherCode(root["list"][0]["weather"][0]["id"], root["list"][0]["weather"][0]["icon"]);
-                          id(weather_code_1) = weatherCode(root["list"][1]["weather"][0]["id"], root["list"][0]["weather"][0]["icon"]);
-                          id(weather_code_2) = weatherCode(root["list"][2]["weather"][0]["id"], root["list"][0]["weather"][0]["icon"]);
-                          id(weather_code_3) = weatherCode(root["list"][3]["weather"][0]["id"], root["list"][0]["weather"][0]["icon"]);
+                          id(weather_code_0) = weatherCode(root["list"][0]["weather"][0]["id"], root["list"][0]["sys"]["pod"]);
+                          id(weather_code_1) = weatherCode(root["list"][1]["weather"][0]["id"], root["list"][1]["sys"]["pod"]);
+                          id(weather_code_2) = weatherCode(root["list"][2]["weather"][0]["id"], root["list"][2]["sys"]["pod"]);
+                          id(weather_code_3) = weatherCode(root["list"][3]["weather"][0]["id"], root["list"][3]["sys"]["pod"]);
 
                           id(weather_temp_max) = max(id(weather_temp_max), float(root["list"][0]["main"]["temp_max"]));
                           id(weather_temp_max) = max(id(weather_temp_max), float(root["list"][1]["main"]["temp_max"]));
@@ -545,6 +586,9 @@ script:
                           id(weather_temp_min) = min(id(weather_temp_min), float(root["list"][2]["main"]["temp_min"]));
                           id(weather_temp_min) = min(id(weather_temp_min), float(root["list"][3]["main"]["temp_min"]));
                         });
+                        if (!id(updating_time)) {
+                          id(glass).set_full_update_every(1);
+                        }
                     - delay: 5ms
                     - component.update: glass
               - script.execute: go_to_sleep
@@ -557,6 +601,8 @@ script:
           lambda: return !id(updating_time) && !id(updating_weather) && !id(keep_awake);
         then:
           deep_sleep.enter:
+        else:
+          lambda: "id(glass).set_full_update_every(1000);" # reset epaper full wipe clean
 
 time:
   # https://esphome.io/components/time/
@@ -589,14 +635,6 @@ time:
                     then:
                       deep_sleep.enter:
 
-      - seconds: "/10"
-        then:
-          if:
-            condition:
-              lambda: return id(page) == $TIMERS_PAGE;
-            then:
-              component.update: glass
-
   # https://esphome.io/components/time/sntp
   - id: ntp
     platform: sntp
@@ -606,14 +644,17 @@ time:
           - wifi.connected:
           - lambda: "return id(updating_time) && id(ntp).now().is_valid();"
         then:
-          - lambda: "id(updating_time) = false;"
-          - pcf8563.write_time:
+          - lambda: |-
+              if (!id(updating_weather)) {
+                id(glass).set_full_update_every(1);
+              }
+              id(updating_time) = false;
+          # - pcf8563.write_time:
           # Two updates are required, first to refresh the time:
-          - component.update: glass
-          - lambda: "id(glass).set_full_update_every(1);" # epaper full wipe clean
+          # - component.update: glass
+          # - lambda: "id(glass).set_full_update_every(1);" # epaper full wipe clean
           # Then another to trigger the full wipe:
           - component.update: glass
-          - lambda: "id(glass).set_full_update_every(1000);" # epaper full wipe clean
           - script.execute: go_to_sleep
 
 deep_sleep:
@@ -701,8 +742,8 @@ substitutions:
   LANG: en
   #### PAGES ####
   PAGE_COUNT: "4"
-  TIMERS_PAGE: "1000"
-  HA_PAGE: "2000"
+  TIMERS_PAGE: "2000"
+  HA_PAGE: "1000"
   #### PINS ####
   BUTTON_LEFT_TOP: "25"
   BUTTON_LEFT_BOTTOM: "26"
@@ -763,7 +804,7 @@ font:
 
   - id: small_font
     file: "fonts/Futura Bold.otf"
-    size: 14
+    size: 16
 
   - file: fonts/materialdesignicons-webfont.ttf
     id: icon_font
@@ -857,7 +898,7 @@ esp32:
   partitions: min_spiffs.csv
 
 logger:
-  level: INFO
+  level: ERROR
 
 sensor:
   - platform: adc
