@@ -4,6 +4,8 @@ Watchy is an open-hardware, ESP32 wrist watch with e-paper display designed by S
 
 https://watchy.sqfmi.com/
 
+https://watchy.sqfmi.com/docs/hardware
+
 This project is a minimal ESPHome configuration file for the Watchy hardware.
 
 https://esphome.io/

@@ -1,23 +1,10 @@
 ## Watchy ##
-
 # https://watchy.sqfmi.com/docs/hardware
-
-# esphome -s ID 1 run watchy.yaml --device=watchy1.local
-# esphome -s ID 1 run watchy.yaml --device=/dev/cu.usbserial-567F0083021
-
-# esphome -s ID 2 run watchy.yaml --device=watchy2.local
-# esphome -s ID 2 run watchy.yaml --device=/dev/cu.usbserial-57490230711
-
-# esphome -s ID 3 run watchy.yaml --device=watchy3.local
-# esphome -s ID 3 run watchy.yaml --device=/dev/cu.usbserial-57490229431
-
-# esphome -s ID 4 run watchy.yaml --device=watchy4.local
-# esphome -s ID 3 run watchy.yaml --device=/dev/cu.usbserial-57490231491
 
 esphome:
   name: $NAME
   includes:
-    - watchy.h
+    - weather.h
   on_boot:
     priority: 700
     then:
@@ -35,10 +22,10 @@ esphome:
           if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_TIMER) {
             ESP_LOGI("watchy", "Keep awake mode.");
             id(keep_awake) = true;
-            id(glass).set_full_update_every(1); // epaper full wipe clean
           }
 
           if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED) {
+            // Keep wifi on after OTA update:
             id(wifi_id).enable();
           }
 
@@ -51,6 +38,7 @@ esphome:
           if (now.hour % 3 == 0 && now.minute == 0) {
             ESP_LOGI("watchy", "Update weather.");
             id(updating_weather) = true;
+            id(updating_time) = true;
             id(wifi_id).enable();
           }
       - component.update: sunrise
@@ -106,7 +94,7 @@ display:
 
           // Weather //
           if (id(weather_temp_max) != -1000.0 && id(weather_age_hours) <= 12) {
-            it.printf(0, h, id(date_font), TextAlign::BOTTOM_LEFT, "%.0fc", id(weather_temp_max));
+            it.printf(0, h, id(date_font), TextAlign::BOTTOM_LEFT, "%.0f°", id(weather_temp_max));
           }
           if (id(weather_code_0) != 0) {
             it.printf(w, h, id(weather_icon_font), TextAlign::BOTTOM_RIGHT, "%s%s%s%s",
@@ -164,7 +152,7 @@ display:
 
           // Weather Temp //
           if (id(weather_temp_max) != -1000.0 && id(weather_age_hours) <= 12) {
-            it.printf(w/2, h/2 - 30, id(small_font), TextAlign::BOTTOM_CENTER, "%.0f to %.0fc", id(weather_temp_min), id(weather_temp_max));
+            it.printf(w/2, h/2 - 30, id(small_font), TextAlign::BOTTOM_CENTER, "%.0f° to %.0f°", id(weather_temp_min), id(weather_temp_max));
           }
 
           // Date //
@@ -256,7 +244,7 @@ display:
           it.printf(w, 0, id(icon_font), TextAlign::TOP_RIGHT,
             "%s",
             id(wifi_id).is_disabled() ? (id(keep_awake) ? "$AWAKE_ICON" : "") : (id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON")
-          );
+          );   
 
       - id: ha_page
         lambda: |-
@@ -323,7 +311,7 @@ display:
           l += lh;
 
           if (id(weather_temp_max) != -1000.0) {
-            it.printf(0, l, f, TextAlign::TOP_LEFT, "%.0f to %.0fc", id(weather_temp_min), id(weather_temp_max));
+            it.printf(0, l, f, TextAlign::TOP_LEFT, "%.0f° to %.0f°", id(weather_temp_min), id(weather_temp_max));
           }
           l += lh;
 
@@ -370,6 +358,13 @@ display:
           for (int x=-1*random(10); x<=w+20; x+=24) {
             it.printf(x, h+6, id(weather_icon_font), TextAlign::BOTTOM_LEFT, "%s", city[random(cityLen)]);
           }
+
+      - id: dp_page
+        lambda: |-
+          const auto w = it.get_width();
+          const auto h = it.get_height();     
+          it.print(w/2, h/2, id(date_font), TextAlign::BOTTOM_CENTER, "DON'T");
+          it.print(w/2, h/2, id(date_font), TextAlign::TOP_CENTER, "PANIC");
 
 binary_sensor:
   # https://esphome.io/components/binary_sensor
@@ -424,7 +419,7 @@ binary_sensor:
             id(timers)[id(active_timer)] = id(pcf).utcnow().timestamp;
         - script.execute: update_glass
 
-  - id: reset_active_timer_button
+  - id: cancel_active_timer_button
     pin:
       number: $BUTTON_LEFT_BOTTOM
       allow_other_uses: true
@@ -440,7 +435,7 @@ binary_sensor:
           }
       - script.execute: update_glass
 
-  - id: reset_all_timers_button
+  - id: clear_all_timers_button
     pin:
       number: $BUTTON_LEFT_BOTTOM
       allow_other_uses: true
@@ -474,17 +469,22 @@ binary_sensor:
             id(page) = id(page) >= 1000 ? id(page) % 1000 : ((id(page) + 1) % $PAGE_COUNT);
         - script.execute: update_glass
 
-  - id: update_weather_button
+  - id: epaper_display_clean_refresh
     pin:
       number: $BUTTON_RIGHT_TOP
       allow_other_uses: true
     platform: gpio
     filters:
-      delayed_on: 2s
+      delayed_on: 1s
     on_press:
       - lambda: |-
           id(counter) = 0;
-      - script.execute: update_weather
+          // ePaper full wipe clean:
+          id(glass).set_full_update_every(1);
+          id(glass).update();
+          delay(100);
+          id(glass).set_full_update_every(1000);
+          id(glass).update();
 
   ## Right Bottom ##
 
@@ -541,6 +541,8 @@ script:
             return id(circular_roman_clock_page);
           } else if (id(page) == 3) {
             return id(system_info_page);
+          } else if (id(page) == 4) {
+            return id(dp_page);
           } else {
             ESP_LOGE("watchy", "Invalid page id!");
             return id(digital_clock_page);
@@ -562,7 +564,6 @@ script:
               - if:
                   condition:
                     lambda: |-
-                      id(updating_weather) = false;
                       ESP_LOGI("watchy", "Weather status %d %ums.", status_code, duration_ms);
                       return status_code == 200;
                   then:
@@ -576,19 +577,19 @@ script:
                           id(weather_code_2) = weatherCode(root["list"][2]["weather"][0]["id"], root["list"][2]["sys"]["pod"]);
                           id(weather_code_3) = weatherCode(root["list"][3]["weather"][0]["id"], root["list"][3]["sys"]["pod"]);
 
-                          id(weather_temp_max) = max(id(weather_temp_max), float(root["list"][0]["main"]["temp_max"]));
-                          id(weather_temp_max) = max(id(weather_temp_max), float(root["list"][1]["main"]["temp_max"]));
-                          id(weather_temp_max) = max(id(weather_temp_max), float(root["list"][2]["main"]["temp_max"]));
-                          id(weather_temp_max) = max(id(weather_temp_max), float(root["list"][3]["main"]["temp_max"]));
-
-                          id(weather_temp_min) = min(id(weather_temp_min), float(root["list"][0]["main"]["temp_min"]));
-                          id(weather_temp_min) = min(id(weather_temp_min), float(root["list"][1]["main"]["temp_min"]));
-                          id(weather_temp_min) = min(id(weather_temp_min), float(root["list"][2]["main"]["temp_min"]));
-                          id(weather_temp_min) = min(id(weather_temp_min), float(root["list"][3]["main"]["temp_min"]));
+                          float tMin = 99.0;
+                          float tMax = -99.0;
+                          for (int x=0; x<=3; ++x) {
+                            tMin = min(tMin, float(root["list"][x]["main"]["temp_min"]));
+                            tMax = max(tMax, float(root["list"][x]["main"]["temp_max"]));
+                          }
+                          id(weather_temp_min) = tMin;
+                          id(weather_temp_max) = tMax;
                         });
                         if (!id(updating_time)) {
                           id(glass).set_full_update_every(1);
                         }
+                        id(updating_weather) = false;
                     - delay: 5ms
                     - component.update: glass
               - script.execute: go_to_sleep
@@ -644,13 +645,13 @@ time:
           - wifi.connected:
           - lambda: "return id(updating_time) && id(ntp).now().is_valid();"
         then:
+          - pcf8563.write_time:
           - lambda: |-
               if (!id(updating_weather)) {
                 id(glass).set_full_update_every(1);
               }
               id(updating_time) = false;
-          # - pcf8563.write_time:
-          # Two updates are required, first to refresh the time:
+          # Two updates are required, first to refresh the time????
           # - component.update: glass
           # - lambda: "id(glass).set_full_update_every(1);" # epaper full wipe clean
           # Then another to trigger the full wipe:
@@ -720,11 +721,11 @@ globals:
   - id: weather_temp_min
     type: float
     restore_value: yes
-    initial_value: "1000.0"
+    initial_value: "99.0"
   - id: weather_temp_max
     type: float
     restore_value: yes
-    initial_value: "-1000.0"
+    initial_value: "-99.0"
   - id: active_timer
     type: int
     restore_value: yes
@@ -735,13 +736,14 @@ globals:
 
 substitutions:
   <<: !include secrets.yaml
+  ID: "1"
   NAME: watchy$ID
   #### WEATHER ####
   CITY_ID: "2158177" # Melbourne/Australia
   UNITS: metric
   LANG: en
   #### PAGES ####
-  PAGE_COUNT: "4"
+  PAGE_COUNT: "5"
   TIMERS_PAGE: "2000"
   HA_PAGE: "1000"
   #### PINS ####
@@ -797,14 +799,17 @@ font:
   - id: time_font
     file: "fonts/Futura Bold.otf"
     size: 64
+    glyphs: ":0123456789"
 
   - id: date_font
     file: "fonts/Futura Bold.otf"
     size: 28
+    glyphs: ":°'-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz"
 
   - id: small_font
     file: "fonts/Futura Bold.otf"
     size: 16
+    glyphs: "().:°'-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz"
 
   - file: fonts/materialdesignicons-webfont.ttf
     id: icon_font
