@@ -643,7 +643,7 @@ time:
       if:
         condition:
           - wifi.connected:
-          - lambda: "return id(updating_time) && id(ntp).now().is_valid();"
+          - lambda: "return id(ntp).now().is_valid();"
         then:
           - pcf8563.write_time:
           - lambda: |-
