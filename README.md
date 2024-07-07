@@ -12,9 +12,35 @@ https://esphome.io/
 
 It is a complete, self-contained, drop-in replacement for the original firmware.
 
-[./watchy.yaml](./watchy.yaml)
+- v2: [./watchy_v2.yaml](./watchy_v2.yaml) (Ready/Working/Functional)
+- v3: [./watchy.yaml](./watchy.yaml) (Work in Progress)
 
 ## The Watch
+
+### NEW! Watchy v3
+
+Update: My new v3 module arrived via [Mouser Electronics](https://au.mouser.com/ProductDetail/SQFMI/SQFMI-WATCHY-10?qs=DRkmTr78QARN9VSJRzqRxw%3D%3D). It has hardware changes including ESP32-S3, RTC and rearranged pins.
+
+<div>
+<img src="doc/v3/01.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/v3/02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/v3/03.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/v3/04.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/v3/05.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/v3/06.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/v3/07.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
+
+TODO:
+
+- RTC
+- Weather updates
+- Step counter
+- Battery charge pin and voltage
+
+### v2
+
+Sichiray via AliExpress
 
 <div>
 <img src="doc/buttons.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
@@ -98,3 +124,17 @@ When the page is full, a button press will discard the oldest timer and start a 
 <img src="doc/17.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/18.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
+
+## Install ESPHome on Mac OSX
+
+https://esphome.io/guides/installing_esphome.html#mac
+
+    brew install esphome
+    brew install pillow
+    brew unlink pillow
+
+Download:
+https://raw.githubusercontent.com/Homebrew/homebrew-core/fc831c5d76dc2eb6dbe2265ca9b6ca93d27140bc/Formula/p/pillow.rb
+
+    brew install ./pillow.rb
+    brew pin pillow

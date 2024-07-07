@@ -9,12 +9,12 @@ esphome:
     priority: 700
     then:
       - delay: 5ms
-      # - pcf8563.read_time:
+      - pcf8563.read_time:
       - delay: 5ms
       - lambda: |-
-          id(weather_age_hours) = (id(ntp).utcnow().timestamp - id(weather_age)) / (60*60);
+          id(weather_age_hours) = (id(pcf).utcnow().timestamp - id(weather_age)) / (60*60);
 
-          const auto now = id(ntp).now();
+          const auto now = id(pcf).now();
           id(chime) = (now.hour ==  8 && now.minute == 0)
                    || (now.hour == 16 && now.minute == 0)
                    ;
@@ -66,10 +66,10 @@ display:
   - id: glass
     platform: waveshare_epaper
     model: 1.54inv2
-    cs_pin: 33
-    dc_pin: 34
-    reset_pin: 35
-    busy_pin: 36
+    cs_pin: 5
+    dc_pin: 10
+    busy_pin: 19
+    reset_pin: 9
     update_interval: never
     # Problem: full_update_every does not work as expected because esphome code will do a full update on every boot up.
     # Solution: Edited `waveshare_epaper.h` and initialise to 1 instead of 0: `uint32_t at_update_{1};`
@@ -82,7 +82,7 @@ display:
         lambda: |-
           auto w = it.get_width();
           auto h = it.get_height();
-          const auto now = id(ntp).now();
+          const auto now = id(pcf).now();
 
           // Date //
           it.strftime(w/2, 0, id(date_font), TextAlign::TOP_CENTER, "%a %d %b", now);
@@ -114,7 +114,7 @@ display:
 
           // Active Timer //
           if (id(timers)[id(active_timer)] != 0) {
-            int activeTimer = id(ntp).utcnow().timestamp - id(timers)[id(active_timer)];
+            int activeTimer = id(pcf).utcnow().timestamp - id(timers)[id(active_timer)];
             if (activeTimer < 24 * 60 * 60) {
               it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER,
                 "%dh %02dm",
@@ -128,7 +128,7 @@ display:
         lambda: |-
           auto w = it.get_width();
           auto h = it.get_height();
-          const auto now = id(ntp).now();
+          const auto now = id(pcf).now();
           const bool n = id(page) == 1;
 
           // Center Dot //
@@ -201,8 +201,8 @@ display:
         lambda: |-
           const auto w = it.get_width();
           const auto h = it.get_height();
-          const auto now = id(ntp).now();
-          const auto utcnow = id(ntp).utcnow();
+          const auto now = id(pcf).now();
+          const auto utcnow = id(pcf).utcnow();
 
           it.print(0, 0, id(weather_icon_font), TextAlign::TOP_LEFT, "$TIMER_ICON");
 
@@ -244,13 +244,13 @@ display:
           it.printf(w, 0, id(icon_font), TextAlign::TOP_RIGHT,
             "%s",
             id(wifi_id).is_disabled() ? (id(keep_awake) ? "$AWAKE_ICON" : "") : (id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON")
-          );
+          );   
 
       - id: ha_page
         lambda: |-
           const auto w = it.get_width();
           const auto h = it.get_height();
-          const auto now = id(ntp).now();
+          const auto now = id(pcf).now();
 
           it.print(0, 0, id(weather_icon_font), TextAlign::TOP_LEFT, "$HA_ICON");
 
@@ -274,7 +274,7 @@ display:
         lambda: |-
           const auto w = it.get_width();
           const auto h = it.get_height();
-          const auto now = id(ntp).now();
+          const auto now = id(pcf).now();
 
           const char* sky[] = {
             "$STAR",
@@ -375,7 +375,6 @@ binary_sensor:
     pin:
       number: $BUTTON_LEFT_TOP
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
     platform: gpio
     on_click:
       min_length: 0ms
@@ -392,7 +391,6 @@ binary_sensor:
     pin:
       number: $BUTTON_LEFT_TOP
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
     platform: gpio
     filters:
       delayed_on: 1s
@@ -409,7 +407,6 @@ binary_sensor:
     pin:
       number: $BUTTON_LEFT_BOTTOM
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
     platform: gpio
     on_click:
       min_length: 0ms
@@ -419,14 +416,13 @@ binary_sensor:
             id(counter) = 0;
             id(page) = id(page) % 1000 + $TIMERS_PAGE;
             id(active_timer) = (id(active_timer) + 1) % 5;
-            id(timers)[id(active_timer)] = id(ntp).utcnow().timestamp;
+            id(timers)[id(active_timer)] = id(pcf).utcnow().timestamp;
         - script.execute: update_glass
 
   - id: cancel_active_timer_button
     pin:
       number: $BUTTON_LEFT_BOTTOM
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
     platform: gpio
     filters:
       delayed_on: 1s
@@ -443,7 +439,6 @@ binary_sensor:
     pin:
       number: $BUTTON_LEFT_BOTTOM
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
     platform: gpio
     filters:
       delayed_on: 2s
@@ -451,7 +446,7 @@ binary_sensor:
       - lambda: |-
           id(page) = id(page) % 1000 + $TIMERS_PAGE;
           id(active_timer) = 0;
-          id(timers)[0] = id(ntp).utcnow().timestamp;
+          id(timers)[0] = id(pcf).utcnow().timestamp;
           id(timers)[1] = 0;
           id(timers)[2] = 0;
           id(timers)[3] = 0;
@@ -464,7 +459,6 @@ binary_sensor:
     pin:
       number: $BUTTON_RIGHT_TOP
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
     platform: gpio
     on_click:
       min_length: 0ms
@@ -479,7 +473,6 @@ binary_sensor:
     pin:
       number: $BUTTON_RIGHT_TOP
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
     platform: gpio
     filters:
       delayed_on: 1s
@@ -499,7 +492,6 @@ binary_sensor:
     pin:
       number: $BUTTON_RIGHT_BOTTOM
       allow_other_uses: false
-      inverted: $BUTTON_INVERTED
     platform: gpio
     on_press:
       - lambda: |-
@@ -566,19 +558,18 @@ script:
           url: http://api.openweathermap.org/data/2.5/forecast?cnt=4&id=$CITY_ID&units=$UNITS&lang=$LANG&appid=$WEATHER_KEY
           headers:
             Content-Type: application/json
-          capture_response: true
+          verify_ssl: false
           on_response:
             then:
               - if:
                   condition:
                     lambda: |-
-                      // ESP_LOGI("watchy", "Weather status %d %ums.", response.status_code, response.duration_ms);
-                      // return response.status_code == 200;
-                      return true;
+                      ESP_LOGI("watchy", "Weather status %d %ums.", status_code, duration_ms);
+                      return status_code == 200;
                   then:
                     - lambda: |-
-                        json::parse_json(body, [](JsonObject root) -> bool {
-                          id(weather_age) = id(ntp).utcnow().timestamp;
+                        json::parse_json(id(http_request_data).get_string(), [](JsonObject root) {
+                          id(weather_age) = id(pcf).utcnow().timestamp;
                           id(weather_age_hours) = 0;
 
                           id(weather_code_0) = weatherCode(root["list"][0]["weather"][0]["id"], root["list"][0]["sys"]["pod"]);
@@ -594,14 +585,10 @@ script:
                           }
                           id(weather_temp_min) = tMin;
                           id(weather_temp_max) = tMax;
-
-                          return true;
                         });
-
                         if (!id(updating_time)) {
                           id(glass).set_full_update_every(1);
                         }
-
                         id(updating_weather) = false;
                     - delay: 5ms
                     - component.update: glass
@@ -621,33 +608,33 @@ script:
 time:
   # https://esphome.io/components/time/
   # https://esphome.io/components/time/pcf8563.html
-  # - platform: pcf8563
-  #   id: pcf
-  #   update_interval: never
-  #   address: 0x51
-  #   on_time:
-  #     - seconds: 0
-  #       then:
-  #         - lambda: id(counter) += 1;
-  #         - if:
-  #             condition:
-  #               lambda: return id(keep_awake);
-  #             then:
-  #               - if:
-  #                   condition:
-  #                     lambda: return id(counter) <= 5;
-  #                   then:
-  #                     component.update: glass
-  #                   else:
-  #                     - wifi.disable:
-  #                     - component.update: glass
-  #                     - deep_sleep.enter:
-  #             else:
-  #               - if:
-  #                   condition:
-  #                     lambda: return id(counter) > 2;
-  #                   then:
-  #                     deep_sleep.enter:
+  - platform: pcf8563
+    id: pcf
+    update_interval: never
+    address: 0x51
+    on_time:
+      - seconds: 0
+        then:
+          - lambda: id(counter) += 1;
+          - if:
+              condition:
+                lambda: return id(keep_awake);
+              then:
+                - if:
+                    condition:
+                      lambda: return id(counter) <= 5;
+                    then:
+                      component.update: glass
+                    else:
+                      - wifi.disable:
+                      - component.update: glass
+                      - deep_sleep.enter:
+              else:
+                - if:
+                    condition:
+                      lambda: return id(counter) > 2;
+                    then:
+                      deep_sleep.enter:
 
   # https://esphome.io/components/time/sntp
   - id: ntp
@@ -658,7 +645,7 @@ time:
           - wifi.connected:
           - lambda: "return id(ntp).now().is_valid();"
         then:
-          # - pcf8563.write_time:
+          - pcf8563.write_time:
           - lambda: |-
               if (!id(updating_weather)) {
                 id(glass).set_full_update_every(1);
@@ -760,34 +747,13 @@ substitutions:
   TIMERS_PAGE: "2000"
   HA_PAGE: "1000"
   #### PINS ####
-  # i2c:
-  WATCHY_V3_SDA: "12"
-  WATCHY_V3_SCL: "11"
-  # SPI:
-  WATCHY_V3_SS:    "33"
-  WATCHY_V3_MOSI:  "48"
-  WATCHY_V3_MISO:  "46"
-  WATCHY_V3_SCK:   "47"
-  # Buttons
-  BUTTON_INVERTED: "true"
-  BUTTON_LEFT_TOP:  "6"
-  BUTTON_LEFT_BOTTOM:  "7"
-  BUTTON_RIGHT_TOP:    "0"
-  BUTTON_RIGHT_BOTTOM:  "8"
-  # Display:
-  DISPLAY_CS:    "33"
-  DISPLAY_DC:    "34"
-  DISPLAY_RES:   "35"
-  DISPLAY_BUSY:  "36"
-  # Other:
-  ACC_INT_1_PIN: "14"
-  ACC_INT_2_PIN: "13"
-  VIB_MOTOR_PIN: "17"
-  BATT_ADC_PIN: "9"
-  CHRG_STATUS_PIN: "10"
-  USB_DET_PIN: "21"
-  RTC_INT_PIN: "-1" # not used
-  ADC_VOLTAGE_DIVIDER: "1.2777"
+  BUTTON_LEFT_TOP: "25"
+  BUTTON_LEFT_BOTTOM: "26"
+  BUTTON_RIGHT_TOP: "35"
+  BUTTON_RIGHT_BOTTOM: "4"
+  RTC_INTERRUPT: "27"
+  BUZZER: "13"
+  BATT_ADC: "34"
   #### ICONS ####
   AWAKE_ICON: "󱐋"
   SLEEP_ICON: "󰒲"
@@ -933,36 +899,31 @@ font:
       - "$LIGHTBULB_OFF_ICON"
 
 esp32:
-  board: esp32-s3-devkitc-1
-  ## https://raw.githubusercontent.com/espressif/arduino-esp32/master/tools/partitions/default_8MB.csv
-  flash_size: 8MB
-  partitions: default_8MB.csv
-  variant: esp32s3
+  board: esp32dev
+  partitions: min_spiffs.csv
 
 logger:
-  level: INFO
+  level: ERROR
 
 sensor:
   - platform: adc
-    pin: $BATT_ADC_PIN
+    pin: $BATT_ADC
     id: battery
     update_interval: never
 
 switch:
   - id: buzzer
-    pin: $VIB_MOTOR_PIN
+    pin: $BUZZER
     platform: gpio
 
 i2c:
   scan: true
-  sda: $WATCHY_V3_SDA
-  scl: $WATCHY_V3_SCL
+  sda: 21
+  scl: 22
 
 spi:
-  # WATCHY_V3_SS ??
-  mosi_pin: $WATCHY_V3_MOSI
-  miso_pin: $WATCHY_V3_MISO
-  clk_pin: $WATCHY_V3_SCK
+  mosi_pin: 23
+  clk_pin: 18
 
 sun:
   id: sol
@@ -981,11 +942,9 @@ text_sensor:
 
 ota:
   password: $OTA_PASSWORD
-  platform: esphome
 
 http_request:
   id: http_request_data
-  verify_ssl: false
 
 external_components:
   - components: [waveshare_epaper]
