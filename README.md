@@ -19,7 +19,7 @@ It is a complete, self-contained, drop-in replacement for the original firmware.
 
 ### NEW! Watchy v3
 
-Update: My new v3 module arrived via [Mouser Electronics](https://au.mouser.com/ProductDetail/SQFMI/SQFMI-WATCHY-10?qs=DRkmTr78QARN9VSJRzqRxw%3D%3D). It has hardware changes including ESP32-S3, RTC and rearranged pins.
+Update: New v3 module arrived via [Mouser Electronics](https://au.mouser.com/ProductDetail/SQFMI/SQFMI-WATCHY-10?qs=DRkmTr78QARN9VSJRzqRxw%3D%3D). It has hardware changes including ESP32-S3, RTC and rearranged pins.
 
 <div>
 <img src="doc/v3/01.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
@@ -31,13 +31,15 @@ Update: My new v3 module arrived via [Mouser Electronics](https://au.mouser.com/
 <img src="doc/v3/07.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-TODO:
-
 https://github.com/sqfmi/Watchy/compare/667d86737dd3dcedf67d83cf69553b28f4e1f38b..master
 
+TODO:
+
 - ESP32-S3 on-board RTC - It works, but how!?
-- Battery charge pin and voltage
-- Step counter
+- Battery voltage ADC - Untested
+- Step counter (BMA)
+
+https://github.com/sqfmi/Watchy/compare/667d86737dd3dcedf67d83cf69553b28f4e1f38b..master
 
 ### v2
 
@@ -148,6 +150,20 @@ When the page is full, a button press will discard the oldest timer and start a 
 </div>
 
 ## Install / Flash
+
+### Fonts
+
+Download and save `Futura Bold.otf` from:
+
+https://freefonts.co/fonts/futura-bold
+
+Download and save `materialdesignicons-webfont.ttf` from:
+
+https://github.com/Templarian/MaterialDesign-Webfont/tree/master/fonts
+
+Save the files to `fonts` directory.
+
+TODO: Do the licenses allow inclusion in this repo?
 
 ### Install ESPHome on Mac OSX
 

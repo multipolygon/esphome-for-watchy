@@ -106,9 +106,10 @@ display:
 
           // Status Icons //
           it.printf(w/2, h/2+46, id(icon_font), TextAlign::CENTER,
-            "%s%s",
+            "%s%s%s",
             id(chime) ? "$BELL_ICON" : "",
-            id(wifi_id).is_disabled() ? (id(keep_awake) ? "$AWAKE_ICON" : "") : (id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON")
+            id(wifi_id).is_disabled() ? (id(keep_awake) ? "$AWAKE_ICON" : "") : (id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON"),
+            !id(battery).has_state() ? "" : (id(battery).state > 3.8 ? "$BATTERY_FULL" : (id(battery).state > 3.5 ? "$BATTERY_HIGH" : (id(battery).state > 3.2 ? "$BATTERY_LOW" : "$BATTERY_EMPTY")))
           );
 
           // Active Timer //
@@ -323,7 +324,7 @@ display:
           it.print(0, l, f, TextAlign::TOP_LEFT, "ID: $ID");
           l += lh;
 
-          it.printf(0, l, f, TextAlign::TOP_LEFT, "Battery: %.02f V", id(battery).state);
+          it.printf(0, l, f, TextAlign::TOP_LEFT, "Battery: %.02fV", id(battery).state);
           l += lh;
 
           const char* city[] = {
@@ -506,6 +507,13 @@ binary_sensor:
           id(page) = id(page) % 1000 + $HA_PAGE;
       - script.execute: update_glass
 
+  ## Charging ##
+
+  # - id: is_charging
+  #   pin:
+  #     number: $CHRG_STATUS_PIN
+  #   platform: gpio
+
 wifi:
   # https://esphome.io/components/wifi.html
   id: wifi_id
@@ -614,14 +622,6 @@ script:
           lambda: "id(glass).set_full_update_every(1000);" # reset epaper full wipe clean
 
 time:
-  ## https://esphome.io/components/time/
-  ## https://esphome.io/components/time/pcf8563.html
-  ## Not used for v3:
-  # - platform: pcf8563
-  #   id: pcf
-  #   update_interval: never
-  #   address: 0x51
-
   ## https://esphome.io/components/time/sntp
   - id: ntp
     platform: sntp
@@ -666,7 +666,15 @@ time:
                     condition:
                       lambda: return id(counter) > 2;
                     then:
-                      deep_sleep.enter:          
+                      deep_sleep.enter:
+
+  ## Only for v2
+  ## https://esphome.io/components/time/
+  ## https://esphome.io/components/time/pcf8563.html
+  # - platform: pcf8563
+  #   id: pcf
+  #   update_interval: never
+  #   address: 0x51
 
 deep_sleep:
   # https://esphome.io/components/deep_sleep.html
@@ -738,13 +746,14 @@ globals:
     restore_value: yes
 
 substitutions:
+  #### PARAMS ####
+  ID: "1"
+  NAME: watchy$ID
   #### SECRETS ####
   <<: !include secrets.yaml
   #### PINS ####
+  VERSION: "3"
   <<: !include pins_v3.yaml
-  #### ID ####
-  ID: "1"
-  NAME: watchy$ID
   #### WEATHER ####
   CITY_ID: "2158177" # Melbourne/Australia
   UNITS: metric
@@ -754,8 +763,9 @@ substitutions:
   TIMERS_PAGE: "2000"
   HA_PAGE: "1000"
   #### ICONS ####
-  AWAKE_ICON: "󱐋"
+  AWAKE_ICON: "󰇵"
   SLEEP_ICON: "󰒲"
+  CHARGING_ICON: "󱐋"
   OK_WIFI_ICON: "󰖩"
   NO_WIFI_ICON: "󰖪"
   OK_NTP_ICON: "󰸞"
@@ -768,6 +778,10 @@ substitutions:
   LIGHTBULB_ON_ICON: "󰌵"
   LIGHTBULB_OFF_ICON: "󰌶"
   BELL_ICON: "󰂞"
+  BATTERY_FULL: "󰁹"
+  BATTERY_HIGH: "󰂀"
+  BATTERY_LOW: "󰁼"
+  BATTERY_EMPTY: "󰂎"
   # City:
   CITY: "󰅆"
   CITY2: "󰨶"
@@ -816,11 +830,16 @@ font:
     glyphs:
       - "$AWAKE_ICON"
       - "$SLEEP_ICON"
+      - "$CHARGING_ICON"
       - "$OK_WIFI_ICON"
       - "$NO_WIFI_ICON"
       - "$OK_NTP_ICON"
       - "$NO_NTP_ICON"
       - "$BELL_ICON"
+      - "$BATTERY_FULL"
+      - "$BATTERY_HIGH"
+      - "$BATTERY_LOW"
+      - "$BATTERY_EMPTY"
 
   - id: weather_icon_font
     file: fonts/materialdesignicons-webfont.ttf
@@ -905,13 +924,19 @@ esp32:
   variant: esp32s3
 
 logger:
-  level: INFO
+  level: ERROR
 
 sensor:
   - platform: adc
+    ## https://esphome.io/components/sensor/adc.html#esp32-pins
+    ## What does this mean!?:
+    ## "ADC2 pins are only usable when Wi-Fi is not configured on the device."
+    attenuation: auto
     pin: $BATT_ADC_PIN
     id: battery
     update_interval: never
+    filters:
+      - multiply: $ADC_VOLTAGE_DIVIDER
 
 switch:
   - id: buzzer
