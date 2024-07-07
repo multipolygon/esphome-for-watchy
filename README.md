@@ -125,7 +125,9 @@ When the page is full, a button press will discard the oldest timer and start a 
 <img src="doc/18.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-## Install ESPHome on Mac OSX
+## Install / Flash
+
+### Install ESPHome on Mac OSX
 
 https://esphome.io/guides/installing_esphome.html#mac
 
@@ -138,3 +140,22 @@ https://raw.githubusercontent.com/Homebrew/homebrew-core/fc831c5d76dc2eb6dbe2265
 
     brew install ./pillow.rb
     brew pin pillow
+
+### Enter Bootloader Mode
+
+https://watchy.sqfmi.com/docs/getting-started#uploading-new-watchfacesfirmware
+
+To upload new firmware/watchfaces to Watchy, you will need to enter **bootloader** mode
+
+1. Plug in the USB on Watchy
+1. Press and hold the top 2 buttons for more than 4 seconds, then release the **Left button first**, before releasing the Up button
+1. You should now see an ESP32S3 device enumerate a serial port i.e. COM, cu.\*
+
+### Flash
+
+    esphome -s ID 0 run watchy.yaml
+
+### Reset
+
+1. Press and hold the top 2 buttons for more than 4 seconds, then release the **Right button first**, before releasing the Back button
+1. Watchy should now reset, wait a few seconds for it to boot up and refresh the screen
