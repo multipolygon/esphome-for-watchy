@@ -12,14 +12,13 @@ https://esphome.io/
 
 It is a complete, self-contained, drop-in replacement for the original firmware.
 
-- v2: [./watchy_v2.yaml](./watchy_v2.yaml) (Ready/Working/Functional)
-- v3: [./watchy.yaml](./watchy.yaml) (Work in Progress)
-
 ## The Watch
 
-### NEW! Watchy v3
+### Watchy hardware v3 - NEW 2024!
 
-Update: New v3 module arrived via [Mouser Electronics](https://au.mouser.com/ProductDetail/SQFMI/SQFMI-WATCHY-10?qs=DRkmTr78QARN9VSJRzqRxw%3D%3D). It has hardware changes including ESP32-S3, RTC and rearranged pins.
+- Watchy v3: [./watchy.yaml](./watchy.yaml)
+
+Update: New (2024) v3 module arrived via [Mouser Electronics](https://au.mouser.com/ProductDetail/SQFMI/SQFMI-WATCHY-10?qs=DRkmTr78QARN9VSJRzqRxw%3D%3D). It has hardware changes including ESP32-S3, RTC and rearranged pins.
 
 <div>
 <img src="doc/v3/01.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
@@ -31,8 +30,6 @@ Update: New v3 module arrived via [Mouser Electronics](https://au.mouser.com/Pro
 <img src="doc/v3/07.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-https://github.com/sqfmi/Watchy/compare/667d86737dd3dcedf67d83cf69553b28f4e1f38b..master
-
 TODO:
 
 - ESP32-S3 on-board RTC - It works, but how!?
@@ -41,7 +38,9 @@ TODO:
 
 https://github.com/sqfmi/Watchy/compare/667d86737dd3dcedf67d83cf69553b28f4e1f38b..master
 
-### v2
+### Watchy hardware v2
+
+- Watchy v2: [./watchy_v2.yaml](./watchy_v2.yaml)
 
 Sichiray via AliExpress
 
@@ -77,15 +76,15 @@ Wifi, which uses a lot of power, will only activate automatically 4 times a day.
 
 In the future, I hope to sync with a calendar once a day.
 
-### Interactivity
+### Minimal Interactivity
 
 Interactive features such as the stop-watch and Home Assistant (or MQTT) controls should be used sparingly because the battery is small and the display is slow.
 
 Multiple buttons and long-press buttons remain free for your own extensions.
 
-### Settings
+### No Onboard User Settings UI
 
-Intentionally, this project does not include any on-watch settings screens or user-configuration. The idea is that the ESPHome YAML file is simple and easy enough for it to be edited directly, and re-flashed to the ESP32 device. The YAML _is_ the settings UI.
+Intentionally, this project does not include any on-watch user settings screens or user configuration. The idea is that the ESPHome YAML file is simple and easy enough for it to be edited directly, and re-flashed to the ESP32 device. **The YAML _is_ the settings UI and the main feature of an open-source, programmable, WiFi watch is that it is easily reprogrammable over WiFi.**
 
 # User Manual
 
@@ -102,7 +101,7 @@ Intentionally, this project does not include any on-watch settings screens or us
 ### Top Right
 
 - Press: Cycle watch faces (digital, hands, roman, info, etc)
-- Long Press: Full-refresh ePaper display (this clears away ghost pixels)
+- Long Press (1s): Full-refresh ePaper display (this clears away ghost pixels)
 
 ### Bottom Left
 
@@ -179,7 +178,7 @@ https://raw.githubusercontent.com/Homebrew/homebrew-core/fc831c5d76dc2eb6dbe2265
     brew install ./pillow.rb
     brew pin pillow
 
-### Enter Bootloader Mode
+### Enter Bootloader Mode (v3 only)
 
 https://watchy.sqfmi.com/docs/getting-started#uploading-new-watchfacesfirmware
 
@@ -193,7 +192,7 @@ To upload new firmware/watchfaces to Watchy, you will need to enter **bootloader
 
     esphome -s ID 0 run watchy.yaml
 
-### Reset
+### Reset (v3 only)
 
 1. Press and hold the top 2 buttons for more than 4 seconds, then release the **Right button first**, before releasing the Back button
 1. Watchy should now reset, wait a few seconds for it to boot up and refresh the screen
