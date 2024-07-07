@@ -33,10 +33,11 @@ Update: My new v3 module arrived via [Mouser Electronics](https://au.mouser.com/
 
 TODO:
 
-- RTC
-- Weather updates
-- Step counter
+https://github.com/sqfmi/Watchy/compare/667d86737dd3dcedf67d83cf69553b28f4e1f38b..master
+
+- ESP32-S3 on-board RTC - It works, but how!?
 - Battery charge pin and voltage
+- Step counter
 
 ### v2
 
@@ -49,7 +50,7 @@ Sichiray via AliExpress
 <img src="doc/04.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-## Faces
+## Multiple Faces
 
 <div>
 <img src="doc/06.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
@@ -84,11 +85,32 @@ Multiple buttons and long-press buttons remain free for your own extensions.
 
 Intentionally, this project does not include any on-watch settings screens or user-configuration. The idea is that the ESPHome YAML file is simple and easy enough for it to be edited directly, and re-flashed to the ESP32 device. The YAML _is_ the settings UI.
 
-# Manual
+# User Manual
 
 ## Buttons
 
 <img src="doc/buttons.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+
+### Top Left
+
+- Press: Power On
+- 2nd Press: Wifi On
+- Long Press (1s): Go to sleep
+
+### Top Right
+
+- Press: Cycle watch faces (digital, hands, roman, info, etc)
+- Long Press: Full-refresh ePaper display (this clears away ghost pixels)
+
+### Bottom Left
+
+- Press: Start new timer (and show timers page) (up to 5 timers)
+- Long Press (1s): Cancel last active timer
+- Long Press (2s): Cancel all tiemrs
+
+### Bottom Right
+
+- Press: Show Home Assistant page (intentionally left unused for custom features)
 
 ## Weather
 
@@ -99,7 +121,7 @@ The watch shows a weather forecast over the upcoming 12 hours. This is a simple,
 <img src="doc/weather02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-## Timer Operation
+## Timers Operation
 
 Press the left-bottom button to show the timers page:
 

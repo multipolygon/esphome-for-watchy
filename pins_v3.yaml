@@ -1,0 +1,43 @@
+## Sourced from:
+## https://github.com/sqfmi/Watchy/blob/71457b5f323b8c3cf214e4df18f2a1d93083613e/src/config.h
+
+# i2c:
+
+I2C_SDA: "12"
+I2C_SCL: "11"
+
+# SPI:
+
+SPI_SS: "33"
+SPI_MOSI: "48"
+SPI_MISO: "46"
+SPI_SCK: "47"
+
+# Buttons
+
+BUTTON_INVERTED: "true"
+BUTTON_LEFT_TOP: "6"
+BUTTON_LEFT_BOTTOM: "7"
+BUTTON_RIGHT_TOP: "0"
+BUTTON_RIGHT_BOTTOM: "8"
+
+# Display:
+
+DISPLAY_CS: "33"
+DISPLAY_DC: "34"
+DISPLAY_RES: "35"
+DISPLAY_BUSY: "36"
+
+# Other:
+
+ACC_INT_1_PIN: "14"
+ACC_INT_2_PIN: "13"
+VIB_MOTOR_PIN: "17"
+BATT_ADC_PIN: "9"
+RTC_INT_PIN: "-1" # not used in v3
+ADC_VOLTAGE_DIVIDER: "1.2777"
+
+# V3 Only
+
+CHRG_STATUS_PIN: "10"
+USB_DET_PIN: "21"

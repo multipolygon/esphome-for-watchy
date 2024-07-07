@@ -8,7 +8,7 @@ esphome:
   on_boot:
     priority: 700
     then:
-      - delay: 5ms
+      # - delay: 5ms
       # - pcf8563.read_time:
       - delay: 5ms
       - lambda: |-
@@ -51,7 +51,6 @@ esphome:
           then:
             - switch.turn_on: buzzer
             - script.execute: update_glass
-            # - delay: !lambda "return id(chime) ? 50 : 10;"
             - switch.turn_off: buzzer
           else:
             - script.execute: update_glass
@@ -567,44 +566,40 @@ script:
           headers:
             Content-Type: application/json
           capture_response: true
+          max_response_buffer_size: 3kB
           on_response:
             then:
-              - if:
-                  condition:
-                    lambda: |-
-                      // ESP_LOGI("watchy", "Weather status %d %ums.", response.status_code, response.duration_ms);
-                      // return response.status_code == 200;
-                      return true;
-                  then:
-                    - lambda: |-
-                        json::parse_json(body, [](JsonObject root) -> bool {
-                          id(weather_age) = id(ntp).utcnow().timestamp;
-                          id(weather_age_hours) = 0;
+              - lambda: |-
+                  // ESP_LOGI("watchy", "Weather status %d %ums.", status_code, duration_ms);
 
-                          id(weather_code_0) = weatherCode(root["list"][0]["weather"][0]["id"], root["list"][0]["sys"]["pod"]);
-                          id(weather_code_1) = weatherCode(root["list"][1]["weather"][0]["id"], root["list"][1]["sys"]["pod"]);
-                          id(weather_code_2) = weatherCode(root["list"][2]["weather"][0]["id"], root["list"][2]["sys"]["pod"]);
-                          id(weather_code_3) = weatherCode(root["list"][3]["weather"][0]["id"], root["list"][3]["sys"]["pod"]);
+                  json::parse_json(body, [](JsonObject root) -> bool {
+                    id(weather_age) = id(ntp).utcnow().timestamp;
+                    id(weather_age_hours) = 0;
 
-                          float tMin = 99.0;
-                          float tMax = -99.0;
-                          for (int x=0; x<=3; ++x) {
-                            tMin = min(tMin, float(root["list"][x]["main"]["temp_min"]));
-                            tMax = max(tMax, float(root["list"][x]["main"]["temp_max"]));
-                          }
-                          id(weather_temp_min) = tMin;
-                          id(weather_temp_max) = tMax;
+                    id(weather_code_0) = weatherCode(root["list"][0]["weather"][0]["id"], root["list"][0]["sys"]["pod"]);
+                    id(weather_code_1) = weatherCode(root["list"][1]["weather"][0]["id"], root["list"][1]["sys"]["pod"]);
+                    id(weather_code_2) = weatherCode(root["list"][2]["weather"][0]["id"], root["list"][2]["sys"]["pod"]);
+                    id(weather_code_3) = weatherCode(root["list"][3]["weather"][0]["id"], root["list"][3]["sys"]["pod"]);
 
-                          return true;
-                        });
+                    float tMin = 99.0;
+                    float tMax = -99.0;
+                    for (int x=0; x<=3; ++x) {
+                      tMin = min(tMin, float(root["list"][x]["main"]["temp_min"]));
+                      tMax = max(tMax, float(root["list"][x]["main"]["temp_max"]));
+                    }
+                    id(weather_temp_min) = tMin;
+                    id(weather_temp_max) = tMax;
 
-                        if (!id(updating_time)) {
-                          id(glass).set_full_update_every(1);
-                        }
+                    return true;
+                  });
 
-                        id(updating_weather) = false;
-                    - delay: 5ms
-                    - component.update: glass
+                  if (!id(updating_time)) {
+                    id(glass).set_full_update_every(1);
+                  }
+
+                  id(updating_weather) = false;
+              - delay: 5ms
+              - component.update: glass
               - script.execute: go_to_sleep
 
   - id: go_to_sleep
@@ -619,39 +614,18 @@ script:
           lambda: "id(glass).set_full_update_every(1000);" # reset epaper full wipe clean
 
 time:
-  # https://esphome.io/components/time/
-  # https://esphome.io/components/time/pcf8563.html
+  ## https://esphome.io/components/time/
+  ## https://esphome.io/components/time/pcf8563.html
+  ## Not used for v3:
   # - platform: pcf8563
   #   id: pcf
   #   update_interval: never
   #   address: 0x51
-  #   on_time:
-  #     - seconds: 0
-  #       then:
-  #         - lambda: id(counter) += 1;
-  #         - if:
-  #             condition:
-  #               lambda: return id(keep_awake);
-  #             then:
-  #               - if:
-  #                   condition:
-  #                     lambda: return id(counter) <= 5;
-  #                   then:
-  #                     component.update: glass
-  #                   else:
-  #                     - wifi.disable:
-  #                     - component.update: glass
-  #                     - deep_sleep.enter:
-  #             else:
-  #               - if:
-  #                   condition:
-  #                     lambda: return id(counter) > 2;
-  #                   then:
-  #                     deep_sleep.enter:
 
-  # https://esphome.io/components/time/sntp
+  ## https://esphome.io/components/time/sntp
   - id: ntp
     platform: sntp
+    timezone: $TIME_ZONE
     on_time_sync:
       if:
         condition:
@@ -670,22 +644,38 @@ time:
           # Then another to trigger the full wipe:
           - component.update: glass
           - script.execute: go_to_sleep
+    on_time:
+      - seconds: 0
+        then:
+          - lambda: id(counter) += 1;
+          - if:
+              condition:
+                lambda: return id(keep_awake);
+              then:
+                - if:
+                    condition:
+                      lambda: return id(counter) <= 5;
+                    then:
+                      component.update: glass
+                    else:
+                      - wifi.disable:
+                      - component.update: glass
+                      - deep_sleep.enter:
+              else:
+                - if:
+                    condition:
+                      lambda: return id(counter) > 2;
+                    then:
+                      deep_sleep.enter:          
 
 deep_sleep:
   # https://esphome.io/components/deep_sleep.html
-  sleep_duration: 1min
-  wakeup_pin_mode: KEEP_AWAKE
-  esp32_ext1_wakeup:
-    mode: ANY_HIGH
-    pins:
-      - number: $BUTTON_LEFT_TOP
-        allow_other_uses: true
-      # - number: $BUTTON_LEFT_BOTTOM
-      #   allow_other_uses: true
-      # - number: $BUTTON_RIGHT_TOP
-      #   allow_other_uses: true
-      # - number: $BUTTON_RIGHT_BOTTOM
-      #   allow_other_uses: true
+  sleep_duration: 70sec # sleep_duration is slightly longer than a minute to slightly extend battery life
+  wakeup_pin_mode: INVERT_WAKEUP
+  wakeup_pin:
+    number: $BUTTON_LEFT_TOP
+    inverted: $BUTTON_INVERTED
+    allow_other_uses: true
 
 globals:
   - id: counter
@@ -748,7 +738,11 @@ globals:
     restore_value: yes
 
 substitutions:
+  #### SECRETS ####
   <<: !include secrets.yaml
+  #### PINS ####
+  <<: !include pins_v3.yaml
+  #### ID ####
   ID: "1"
   NAME: watchy$ID
   #### WEATHER ####
@@ -759,35 +753,6 @@ substitutions:
   PAGE_COUNT: "5"
   TIMERS_PAGE: "2000"
   HA_PAGE: "1000"
-  #### PINS ####
-  # i2c:
-  WATCHY_V3_SDA: "12"
-  WATCHY_V3_SCL: "11"
-  # SPI:
-  WATCHY_V3_SS:    "33"
-  WATCHY_V3_MOSI:  "48"
-  WATCHY_V3_MISO:  "46"
-  WATCHY_V3_SCK:   "47"
-  # Buttons
-  BUTTON_INVERTED: "true"
-  BUTTON_LEFT_TOP:  "6"
-  BUTTON_LEFT_BOTTOM:  "7"
-  BUTTON_RIGHT_TOP:    "0"
-  BUTTON_RIGHT_BOTTOM:  "8"
-  # Display:
-  DISPLAY_CS:    "33"
-  DISPLAY_DC:    "34"
-  DISPLAY_RES:   "35"
-  DISPLAY_BUSY:  "36"
-  # Other:
-  ACC_INT_1_PIN: "14"
-  ACC_INT_2_PIN: "13"
-  VIB_MOTOR_PIN: "17"
-  BATT_ADC_PIN: "9"
-  CHRG_STATUS_PIN: "10"
-  USB_DET_PIN: "21"
-  RTC_INT_PIN: "-1" # not used
-  ADC_VOLTAGE_DIVIDER: "1.2777"
   #### ICONS ####
   AWAKE_ICON: "󱐋"
   SLEEP_ICON: "󰒲"
@@ -955,14 +920,14 @@ switch:
 
 i2c:
   scan: true
-  sda: $WATCHY_V3_SDA
-  scl: $WATCHY_V3_SCL
+  sda: $I2C_SDA
+  scl: $I2C_SCL
 
 spi:
-  # WATCHY_V3_SS ??
-  mosi_pin: $WATCHY_V3_MOSI
-  miso_pin: $WATCHY_V3_MISO
-  clk_pin: $WATCHY_V3_SCK
+  # SPI_SS ??
+  mosi_pin: $SPI_MOSI
+  miso_pin: $SPI_MISO
+  clk_pin: $SPI_SCK
 
 sun:
   id: sol

@@ -1,0 +1,52 @@
+{
+  "cod": "200",
+  "message": 0,
+  "cnt": 4,
+  "list": [
+    {
+      "dt": 1720332000,
+      "main": { "temp": 15.75, "feels_like": 14.56, "temp_min": 14.1, "temp_max": 15.75, "pressure": 1029, "sea_level": 1029, "grnd_level": 1024, "humidity": 45, "temp_kf": 1.65 },
+      "weather": [{ "id": 802, "main": "Clouds", "description": "scattered clouds", "icon": "03d" }],
+      "clouds": { "all": 40 },
+      "wind": { "speed": 0.88, "deg": 85, "gust": 2.34 },
+      "visibility": 10000,
+      "pop": 0,
+      "sys": { "pod": "d" },
+      "dt_txt": "2024-07-07 06:00:00"
+    },
+    {
+      "dt": 1720342800,
+      "main": { "temp": 14.12, "feels_like": 12.92, "temp_min": 10.85, "temp_max": 14.12, "pressure": 1029, "sea_level": 1029, "grnd_level": 1024, "humidity": 51, "temp_kf": 3.27 },
+      "weather": [{ "id": 803, "main": "Clouds", "description": "broken clouds", "icon": "04n" }],
+      "clouds": { "all": 59 },
+      "wind": { "speed": 2.57, "deg": 55, "gust": 4.35 },
+      "visibility": 10000,
+      "pop": 0,
+      "sys": { "pod": "n" },
+      "dt_txt": "2024-07-07 09:00:00"
+    },
+    {
+      "dt": 1720353600,
+      "main": { "temp": 11.24, "feels_like": 9.99, "temp_min": 8.98, "temp_max": 11.24, "pressure": 1028, "sea_level": 1028, "grnd_level": 1024, "humidity": 60, "temp_kf": 2.26 },
+      "weather": [{ "id": 803, "main": "Clouds", "description": "broken clouds", "icon": "04n" }],
+      "clouds": { "all": 75 },
+      "wind": { "speed": 2.24, "deg": 53, "gust": 4.63 },
+      "visibility": 10000,
+      "pop": 0,
+      "sys": { "pod": "n" },
+      "dt_txt": "2024-07-07 12:00:00"
+    },
+    {
+      "dt": 1720364400,
+      "main": { "temp": 8.51, "feels_like": 7.44, "temp_min": 8.51, "temp_max": 8.51, "pressure": 1027, "sea_level": 1027, "grnd_level": 1022, "humidity": 65, "temp_kf": 0 },
+      "weather": [{ "id": 804, "main": "Clouds", "description": "overcast clouds", "icon": "04n" }],
+      "clouds": { "all": 100 },
+      "wind": { "speed": 2.02, "deg": 52, "gust": 4.15 },
+      "visibility": 10000,
+      "pop": 0,
+      "sys": { "pod": "n" },
+      "dt_txt": "2024-07-07 15:00:00"
+    }
+  ],
+  "city": { "id": 2158177, "name": "Melbourne", "coord": { "lat": -37.814, "lon": 144.9633 }, "country": "AU", "population": 0, "timezone": 36000, "sunrise": 1720301723, "sunset": 1720336460 }
+}
