@@ -98,7 +98,7 @@ display:
             it.printf(0, h, id(date_font), TextAlign::BOTTOM_LEFT, "%.0f°", id(weather_temp_max));
           }
           if (id(weather_code_0) != 0) {
-            it.printf(w, h, id(weather_icon_font), TextAlign::BOTTOM_RIGHT, "%s%s%s%s",
+            it.printf(w, h, id(mdi), TextAlign::BOTTOM_RIGHT, "%s%s%s%s",
               id(weather_age_hours) <= 3 ? weather_icon_map[id(weather_code_0)].c_str() : "",
               id(weather_age_hours) <= 6 ? weather_icon_map[id(weather_code_1)].c_str() : "",
               id(weather_age_hours) <= 9 ? weather_icon_map[id(weather_code_2)].c_str() : "",
@@ -107,16 +107,16 @@ display:
           }
 
           // Status Icons //
-          it.printf(w/2, h/2+46, id(icon_font), TextAlign::CENTER,
+          it.printf(w/2, h/2+46, id(mdi_small), TextAlign::CENTER,
             "%s%s%s",
-            id(chime) ? "$BELL_ICON" : "",
-            id(wifi_id).is_disabled() ? (id(keep_awake) ? "$AWAKE_ICON" : "") : (id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON"),
-            id(is_charging).state ? "$BATTERY_CHARGING_ICON" : (
-              !id(battery).has_state() ? "$BATTERY_UNKNOWN_ICON" : (
-                id(battery).state >= $BATTERY_FULL ? "$BATTERY_FULL_ICON" : (
-                  id(battery).state >= $BATTERY_HIGH ? "$BATTERY_HIGH_ICON" : (
-                    id(battery).state >= $BATTERY_LOW ? "$BATTERY_LOW_ICON" :
-                      "$BATTERY_EMPTY_ICON"
+            id(chime) ? "$mdiBellRingOutline" : "",
+            id(wifi_id).is_disabled() ? (id(keep_awake) ? "$mdiEmoticonHappyOutline" : "") : (id(wifi_id).is_connected() ? "$mdiWifi"  : "$mdiWifiOff"),
+            id(is_charging).state ? "$mdiBatteryCharging100" : (
+              !id(battery).has_state() ? "$mdiBatteryUnknown" : (
+                id(battery).state >= $BATTERY_FULL ? "$mdiBattery90" : (
+                  id(battery).state >= $BATTERY_HIGH ? "$mdiBattery70" : (
+                    id(battery).state >= $BATTERY_LOW ? "$mdiBattery30" :
+                      "$mdiBattery10"
                   )
                 )
               )
@@ -187,22 +187,22 @@ display:
 
           // Weather Icons //
           if (id(weather_age_hours) <= 3) {
-            it.printf(w, 0, id(weather_icon_font), TextAlign::TOP_RIGHT, "%s", weather_icon_map[rotateWeatherCode(0, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+            it.printf(w, 0, id(mdi), TextAlign::TOP_RIGHT, "%s", weather_icon_map[rotateWeatherCode(0, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
           }
           if (id(weather_age_hours) <= 6) {
-            it.printf(w, h, id(weather_icon_font), TextAlign::BOTTOM_RIGHT, "%s", weather_icon_map[rotateWeatherCode(1, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+            it.printf(w, h, id(mdi), TextAlign::BOTTOM_RIGHT, "%s", weather_icon_map[rotateWeatherCode(1, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
           }
           if (id(weather_age_hours) <= 9) {
-            it.printf(0, h, id(weather_icon_font), TextAlign::BOTTOM_LEFT, "%s", weather_icon_map[rotateWeatherCode(2, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+            it.printf(0, h, id(mdi), TextAlign::BOTTOM_LEFT, "%s", weather_icon_map[rotateWeatherCode(2, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
           }
           if (id(weather_age_hours) <= 12) {
-            it.printf(0, 0, id(weather_icon_font), TextAlign::TOP_LEFT, "%s", weather_icon_map[rotateWeatherCode(3, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+            it.printf(0, 0, id(mdi), TextAlign::TOP_LEFT, "%s", weather_icon_map[rotateWeatherCode(3, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
           }
 
           // Wifi status //
-          it.printf(w*3/4, h/2, id(icon_font), TextAlign::CENTER,
+          it.printf(w*3/4, h/2, id(mdi_small), TextAlign::CENTER,
             "%s",
-            id(wifi_id).is_disabled() ? (id(keep_awake) ? "$AWAKE_ICON" : "") : (id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON")
+            id(wifi_id).is_disabled() ? (id(keep_awake) ? "$mdiEmoticonHappyOutline" : "") : (id(wifi_id).is_connected() ? "$mdiWifi"  : "$mdiWifiOff")
           );
 
       - <<: *clockface
@@ -215,7 +215,7 @@ display:
           const auto now = id(ntp).now();
           const auto utcnow = id(ntp).utcnow();
 
-          it.print(0, 0, id(weather_icon_font), TextAlign::TOP_LEFT, "$TIMER_ICON");
+          it.print(0, 0, id(mdi), TextAlign::TOP_LEFT, "$mdiTimerOutline");
 
           int l = 0;
           const int lh = 32;
@@ -252,9 +252,9 @@ display:
           }
 
           // Wifi status //
-          it.printf(w, 0, id(icon_font), TextAlign::TOP_RIGHT,
+          it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
             "%s",
-            id(wifi_id).is_disabled() ? (id(keep_awake) ? "$AWAKE_ICON" : "") : (id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON")
+            id(wifi_id).is_disabled() ? (id(keep_awake) ? "$mdiEmoticonHappyOutline" : "") : (id(wifi_id).is_connected() ? "$mdiWifi"  : "$mdiWifiOff")
           );
 
       - id: ha_page
@@ -263,7 +263,7 @@ display:
           const auto h = it.get_height();
           const auto now = id(ntp).now();
 
-          it.print(0, 0, id(weather_icon_font), TextAlign::TOP_LEFT, "$HA_ICON");
+          it.print(0, 0, id(mdi), TextAlign::TOP_LEFT, "$mdiHomeAssistant");
 
           int l = 0;
           const int lh = 34;
@@ -276,9 +276,9 @@ display:
           l += lh;
 
           // Wifi status //
-          it.printf(w, 0, id(icon_font), TextAlign::TOP_RIGHT,
+          it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
             "%s",
-            id(wifi_id).is_disabled() ? "" : id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON"
+            id(wifi_id).is_disabled() ? "" : id(wifi_id).is_connected() ? "$mdiWifi"  : "$mdiWifiOff"
           );
 
       - id: system_info_page
@@ -288,21 +288,21 @@ display:
           const auto now = id(ntp).now();
 
           const char* sky[] = {
-            "$STAR",
-            "$SHSTAR",
-            "$STARS",
-            "$HELI",
-            "$BALLOON",
-            "$BIRD",
-            "$SPINV",
-            "$ISS",
-            "$UFO",
-            "$SATEL"
+            "$mdiStarOutline",
+            "$mdiStarShootingOutline",
+            "$mdiCreationOutline",
+            "$mdiHelicopter",
+            "$mdiAirballoon",
+            "$mdiBird",
+            "$mdiSpaceInvaders",
+            "$mdiSpaceStation",
+            "$mdiUfoOutline",
+            "$mdiSatelliteVariant"
           };
           const int skyLen = 10;
 
           if (id(weather_code_0) != 0) {
-            it.printf(w/2, 0, id(weather_icon_font), TextAlign::TOP_CENTER, "%s%s%s%s%s",
+            it.printf(w/2, 0, id(mdi), TextAlign::TOP_CENTER, "%s%s%s%s%s",
               weather_icon_map[id(weather_code_0)].c_str(),
               weather_icon_map[id(weather_code_1)].c_str(),
               sky[random(skyLen)],
@@ -339,35 +339,35 @@ display:
           l += lh;
 
           const char* city[] = {
-            "$CITY",
-            "$CITY2",
-            "$CITY3",
-            "$CITY",
-            "$CITY2",
-            "$CITY3",
-            "$CITY",
-            "$CITY2",
-            "$CITY2",
-            "$CITY3",
-            "$CITY",
-            "$CITY",
-            "$CITY2",
-            "$CITY3",
-            "$CITY",
-            "$CITY2",
-            "$CITY3",
-            "$CITY",
-            "$CITY2",
-            "$CITY3",
-            "$CASTLE",
-            "$DINO",
-            "$HOSP",
-            "$TREE",
+            "$mdiCity",
+            "$mdiCityVariant",
+            "$mdiOfficeBuilding",
+            "$mdiCity",
+            "$mdiCityVariant",
+            "$mdiOfficeBuilding",
+            "$mdiCity",
+            "$mdiCityVariant",
+            "$mdiCityVariant",
+            "$mdiOfficeBuilding",
+            "$mdiCity",
+            "$mdiCity",
+            "$mdiCityVariant",
+            "$mdiOfficeBuilding",
+            "$mdiCity",
+            "$mdiCityVariant",
+            "$mdiOfficeBuilding",
+            "$mdiCity",
+            "$mdiCityVariant",
+            "$mdiOfficeBuilding",
+            "$mdiCastle",
+            "$mdiGoogleDownasaur",
+            "$mdiHospitalBuilding",
+            "$mdiPineTree",
           };
           const int cityLen = 24;
 
           for (int x=-1*random(10); x<=w+20; x+=24) {
-            it.printf(x, h+6, id(weather_icon_font), TextAlign::BOTTOM_LEFT, "%s", city[random(cityLen)]);
+            it.printf(x, h+6, id(mdi), TextAlign::BOTTOM_LEFT, "%s", city[random(cityLen)]);
           }
 
       - id: dp_page
@@ -582,7 +582,7 @@ script:
     then:
       - lambda: ESP_LOGI("watchy", "Weather HTTP request.");
       - http_request.get:
-          url: http://api.openweathermap.org/data/2.5/forecast?cnt=4&id=$CITY_ID&units=$UNITS&lang=$LANG&appid=$WEATHER_KEY
+          url: http://api.openweathermap.org/data/2.5/forecast?cnt=4&id=$WEATHER_CITY_ID&units=$UNITS&lang=$LANG&appid=$WEATHER_KEY
           headers:
             Content-Type: application/json
           capture_response: true
@@ -790,7 +790,6 @@ substitutions:
   VERSION: "3"
   <<: !include pins_v3.yaml
   #### WEATHER ####
-  CITY_ID: "2158177" # Melbourne/Australia
   UNITS: metric
   LANG: en
   #### PAGES ####
@@ -802,119 +801,100 @@ substitutions:
   BATTERY_HIGH: "3.5"
   BATTERY_LOW: "3.2"
   #### ICONS ####
-  <<: !include icons.yaml
+  <<: !include mdi.yaml
 
 font:
   # https://freefonts.co/fonts/futura-bold
   # https://github.com/Templarian/MaterialDesign-Webfont/tree/master/fonts
-
-  - id: time_font
-    file: "fonts/Futura Bold/Futura Bold.otf"
-    size: 64
-    glyphs: ":0123456789"
-
-  - id: date_font
-    file: "fonts/Futura Bold/Futura Bold.otf"
-    size: 28
-    glyphs: ":°'-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz"
 
   - id: small_font
     file: "fonts/Futura Bold/Futura Bold.otf"
     size: 16
     glyphs: "().:°'-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz"
 
+  - id: date_font
+    file: "fonts/Futura Bold/Futura Bold.otf"
+    size: 28
+    glyphs: ":°'-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz"
+
+  - id: time_font
+    file: "fonts/Futura Bold/Futura Bold.otf"
+    size: 64
+    glyphs: ":0123456789"
+
   - file: fonts/mdi/fonts/materialdesignicons-webfont.woff
-    id: icon_font
+    id: mdi_small
     size: 24
     glyphs:
-      - "$AWAKE_ICON"
-      - "$SLEEP_ICON"
-      - "$OK_WIFI_ICON"
-      - "$NO_WIFI_ICON"
-      - "$OK_NTP_ICON"
-      - "$NO_NTP_ICON"
-      - "$BELL_ICON"
-      - "$BATTERY_CHARGING_ICON"
-      - "$BATTERY_FULL_ICON"
-      - "$BATTERY_HIGH_ICON"
-      - "$BATTERY_LOW_ICON"
-      - "$BATTERY_EMPTY_ICON"
-      - "$BATTERY_UNKNOWN_ICON"
+      - "$mdiEmoticonHappyOutline"
+      - "$mdiWifi"
+      - "$mdiWifiOff"
+      - "$mdiBellRingOutline"
+      - "$mdiBatteryCharging100"
+      - "$mdiBattery90"
+      - "$mdiBattery70"
+      - "$mdiBattery30"
+      - "$mdiBattery10"
+      - "$mdiBatteryUnknown"
 
-  - id: weather_icon_font
+  - id: mdi
     file: fonts/mdi/fonts/materialdesignicons-webfont.woff
     size: 36
     glyphs:
-      - "\U000F0590" # weather-cloudy
-      - "\U000F0F2F" # weather-cloudy-alert
-      - "\U000F0E6E" # weather-cloudy-arrow-right
-      - "\U000F0591" # weather-fog
-      - "\U000F0592" # weather-hail
-      - "\U000F0F30" # weather-hazy
-      - "\U000F0898" # weather-hurricane
-      - "\U000F0593" # weather-lightning
-      - "\U000F067E" # weather-lightning-rainy
-      - "\U000F0594" # weather-night
-      - "\U000F0F31" # weather-night-partly-cloudy
-      - "\U000F0595" # weather-partly-cloudy
-      - "\U000F0F32" # weather-partly-lightning
-      - "\U000F0F33" # weather-partly-rainy
-      - "\U000F0F34" # weather-partly-snowy
-      - "\U000F0F35" # weather-partly-snowy-rainy
-      - "\U000F0596" # weather-pouring
-      - "\U000F0597" # weather-rainy
-      - "\U000F0598" # weather-snowy
-      - "\U000F0F36" # weather-snowy-heavy
-      - "\U000F067F" # weather-snowy-rainy
-      - "\U000F0599" # weather-sunny
-      - "\U000F0F37" # weather-sunny-alert
-      - "\U000F14E4" # weather-sunny-off
-      - "\U000F059A" # weather-sunset
-      - "\U000F059B" # weather-sunset-down
-      - "\U000F059C" # weather-sunset-up
-      - "\U000F0F38" # weather-tornado
-      - "\U000F059D" # weather-windy
-      - "\U000F059E" # weather-windy-variant
-      - "\U000F0026" # alert
-      # Moon:
-      - "\U000F0F61" # moon-first-quarter
-      - "\U000F0F62" # moon-full
-      - "\U000F0F63" # moon-last-quarter
-      - "\U000F0F64" # moon-new
-      - "\U000F0F65" # moon-waning-crescent
-      - "\U000F0F66" # moon-waning-gibbous
-      - "\U000F0F67" # moon-waxing-crescent
-      - "\U000F0F68" # moon-waxing-gibbous
+      # Main:
+      - "$mdiTimerOutline"
+      - "$mdiHomeAssistant"
+      # Weather:
+      - "$mdiWeatherCloudy"
+      - "$mdiWeatherCloudyAlert"
+      - "$mdiWeatherCloudyArrowRight"
+      - "$mdiWeatherFog"
+      - "$mdiWeatherHail"
+      - "$mdiWeatherHazy"
+      - "$mdiWeatherHurricane"
+      - "$mdiWeatherLightning"
+      - "$mdiWeatherLightningRainy"
+      - "$mdiWeatherNight"
+      - "$mdiWeatherNightPartlyCloudy"
+      - "$mdiWeatherPartlyCloudy"
+      - "$mdiWeatherPartlyLightning"
+      - "$mdiWeatherPartlyRainy"
+      - "$mdiWeatherPartlySnowy"
+      - "$mdiWeatherPartlySnowyRainy"
+      - "$mdiWeatherPouring"
+      - "$mdiWeatherRainy"
+      - "$mdiWeatherSnowy"
+      - "$mdiWeatherSnowyHeavy"
+      - "$mdiWeatherSnowyRainy"
+      - "$mdiWeatherSunny"
+      - "$mdiWeatherSunnyAlert"
+      - "$mdiWeatherSunnyOff"
+      - "$mdiWeatherSunset"
+      - "$mdiWeatherSunsetDown"
+      - "$mdiWeatherSunsetUp"
+      - "$mdiWeatherTornado"
+      - "$mdiWeatherWindy"
+      - "$mdiWeatherWindyVariant"
+      - "$mdiAlert"
       # City:
-      - "$CITY"
-      - "$CITY2"
-      - "$CITY3"
-      - "$CASTLE"
-      - "$DINO"
-      - "$HOUSE"
-      - "$HOSP"
-      - "$TREE"
-      - "$CHESS"
-      - "$TRUCK"
+      - "$mdiCity"
+      - "$mdiCityVariant"
+      - "$mdiOfficeBuilding"
+      - "$mdiCastle"
+      - "$mdiGoogleDownasaur"
+      - "$mdiHospitalBuilding"
+      - "$mdiPineTree"
       # Sky:
-      - "$STAR"
-      - "$SHSTAR"
-      - "$STARS"
-      - "$HELI"
-      - "$BALLOON"
-      - "$BIRD"
-      - "$SPINV"
-      - "$ISS"
-      - "$UFO"
-      - "$SATEL"
-      # Other:
-      - "$TIMER_ICON"
-      - "$HA_ICON"
-      - "$BRIGHT_LIGHT_ICON"
-      - "$LOW_LIGHT_ICON"
-      - "$NIGHT_LIGHT_ICON"
-      - "$LIGHTBULB_ON_ICON"
-      - "$LIGHTBULB_OFF_ICON"
+      - "$mdiStarOutline"
+      - "$mdiStarShootingOutline"
+      - "$mdiCreationOutline"
+      - "$mdiHelicopter"
+      - "$mdiAirballoon"
+      - "$mdiBird"
+      - "$mdiSpaceInvaders"
+      - "$mdiSpaceStation"
+      - "$mdiUfoOutline"
+      - "$mdiSatelliteVariant"
 
 esp32:
   board: esp32-s3-devkitc-1
