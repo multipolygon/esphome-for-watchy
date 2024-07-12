@@ -1,7 +1,13 @@
 secrets.yaml
 .esphome
 .DS_Store
-*.ttf
-*.otf
 demo.yaml
 notes.md
+
+
+fonts/mdi/*
+!fonts/mdi/LICENSE
+!fonts/mdi/fonts
+fonts/mdi/fonts/*
+!fonts/mdi/fonts/materialdesignicons-webfont.woff
+

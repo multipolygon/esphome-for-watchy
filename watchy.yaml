@@ -16,6 +16,7 @@ esphome:
 
           const auto now = id(ntp).now();
           id(chime) = (now.hour ==  8 && now.minute == 0)
+                   || (now.hour == 12 && now.minute == 0)
                    || (now.hour == 16 && now.minute == 0)
                    ;
 
@@ -26,6 +27,7 @@ esphome:
 
           if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED) {
             // Keep wifi on after OTA update:
+            id(keep_awake) = true;
             id(wifi_id).enable();
           }
 
@@ -65,10 +67,10 @@ display:
   - id: glass
     platform: waveshare_epaper
     model: 1.54inv2
-    cs_pin: 33
-    dc_pin: 34
-    reset_pin: 35
-    busy_pin: 36
+    cs_pin: $DISPLAY_CS_PIN
+    dc_pin: $DISPLAY_DC_PIN
+    reset_pin: $DISPLAY_RES_PIN
+    busy_pin: $DISPLAY_BUSY_PIN
     update_interval: never
     # Problem: full_update_every does not work as expected because esphome code will do a full update on every boot up.
     # Solution: Edited `waveshare_epaper.h` and initialise to 1 instead of 0: `uint32_t at_update_{1};`
@@ -109,7 +111,16 @@ display:
             "%s%s%s",
             id(chime) ? "$BELL_ICON" : "",
             id(wifi_id).is_disabled() ? (id(keep_awake) ? "$AWAKE_ICON" : "") : (id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON"),
-            !id(battery).has_state() ? "" : (id(battery).state > 3.8 ? "$BATTERY_FULL" : (id(battery).state > 3.5 ? "$BATTERY_HIGH" : (id(battery).state > 3.2 ? "$BATTERY_LOW" : "$BATTERY_EMPTY")))
+            id(is_charging).state ? "$BATTERY_CHARGING_ICON" : (
+              !id(battery).has_state() ? "$BATTERY_UNKNOWN_ICON" : (
+                id(battery).state >= $BATTERY_FULL ? "$BATTERY_FULL_ICON" : (
+                  id(battery).state >= $BATTERY_HIGH ? "$BATTERY_HIGH_ICON" : (
+                    id(battery).state >= $BATTERY_LOW ? "$BATTERY_LOW_ICON" :
+                      "$BATTERY_EMPTY_ICON"
+                  )
+                )
+              )
+            )
           );
 
           // Active Timer //
@@ -373,9 +384,9 @@ binary_sensor:
 
   - id: power_on_button
     pin:
-      number: $BUTTON_LEFT_TOP
+      number: $BUTTON_LEFT_TOP_PIN
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
+      inverted: $BUTTON_PIN_INVERTED
     platform: gpio
     on_click:
       min_length: 0ms
@@ -390,9 +401,9 @@ binary_sensor:
 
   - id: deep_sleep_button
     pin:
-      number: $BUTTON_LEFT_TOP
+      number: $BUTTON_LEFT_TOP_PIN
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
+      inverted: $BUTTON_PIN_INVERTED
     platform: gpio
     filters:
       delayed_on: 1s
@@ -407,9 +418,9 @@ binary_sensor:
 
   - id: timer_button
     pin:
-      number: $BUTTON_LEFT_BOTTOM
+      number: $BUTTON_LEFT_BOTTOM_PIN
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
+      inverted: $BUTTON_PIN_INVERTED
     platform: gpio
     on_click:
       min_length: 0ms
@@ -424,9 +435,9 @@ binary_sensor:
 
   - id: cancel_active_timer_button
     pin:
-      number: $BUTTON_LEFT_BOTTOM
+      number: $BUTTON_LEFT_BOTTOM_PIN
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
+      inverted: $BUTTON_PIN_INVERTED
     platform: gpio
     filters:
       delayed_on: 1s
@@ -441,9 +452,9 @@ binary_sensor:
 
   - id: clear_all_timers_button
     pin:
-      number: $BUTTON_LEFT_BOTTOM
+      number: $BUTTON_LEFT_BOTTOM_PIN
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
+      inverted: $BUTTON_PIN_INVERTED
     platform: gpio
     filters:
       delayed_on: 2s
@@ -462,9 +473,9 @@ binary_sensor:
 
   - id: page_cycle_button
     pin:
-      number: $BUTTON_RIGHT_TOP
+      number: $BUTTON_RIGHT_TOP_PIN
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
+      inverted: $BUTTON_PIN_INVERTED
     platform: gpio
     on_click:
       min_length: 0ms
@@ -477,9 +488,9 @@ binary_sensor:
 
   - id: epaper_display_clean_refresh
     pin:
-      number: $BUTTON_RIGHT_TOP
+      number: $BUTTON_RIGHT_TOP_PIN
       allow_other_uses: true
-      inverted: $BUTTON_INVERTED
+      inverted: $BUTTON_PIN_INVERTED
     platform: gpio
     filters:
       delayed_on: 1s
@@ -497,9 +508,9 @@ binary_sensor:
 
   - id: right_buttom_button
     pin:
-      number: $BUTTON_RIGHT_BOTTOM
+      number: $BUTTON_RIGHT_BOTTOM_PIN
       allow_other_uses: false
-      inverted: $BUTTON_INVERTED
+      inverted: $BUTTON_PIN_INVERTED
     platform: gpio
     on_press:
       - lambda: |-
@@ -509,10 +520,11 @@ binary_sensor:
 
   ## Charging ##
 
-  # - id: is_charging
-  #   pin:
-  #     number: $CHRG_STATUS_PIN
-  #   platform: gpio
+  - id: is_charging
+    pin:
+      # number: $CHRG_STATUS_PIN # Does not seem to work
+      number: $USB_DET_PIN
+    platform: gpio
 
 wifi:
   # https://esphome.io/components/wifi.html
@@ -621,6 +633,29 @@ script:
         else:
           lambda: "id(glass).set_full_update_every(1000);" # reset epaper full wipe clean
 
+  - id: deep_sleep_enter
+    mode: restart
+    then:
+      deep_sleep.enter:
+        sleep_duration: !lambda |-
+          const auto now = id(ntp).now();
+          
+          if (id(battery).state < $BATTERY_LOW) {
+            // Sleep up to 10 min:
+            ESP_LOGE("watchy", "Sleep 10min");
+            return ((10 - (now.minute % 10)) * 60 - now.second) * 1000;
+          }
+
+          if (id(battery).state < $BATTERY_HIGH) {
+            // Sleep up to 5 min:
+            ESP_LOGE("watchy", "Sleep 5min");
+            return ((5 - (now.minute % 5)) * 60 - now.second) * 1000;
+          }
+
+          // Sleep 1 min:
+          ESP_LOGE("watchy", "Sleep 1min");
+          return 60 * 1000; // - now.second;
+
 time:
   ## https://esphome.io/components/time/sntp
   - id: ntp
@@ -678,11 +713,11 @@ time:
 
 deep_sleep:
   # https://esphome.io/components/deep_sleep.html
-  sleep_duration: 70sec # sleep_duration is slightly longer than a minute to slightly extend battery life
+  sleep_duration: 60sec
   wakeup_pin_mode: INVERT_WAKEUP
   wakeup_pin:
-    number: $BUTTON_LEFT_TOP
-    inverted: $BUTTON_INVERTED
+    number: $BUTTON_LEFT_TOP_PIN
+    inverted: $BUTTON_PIN_INVERTED
     allow_other_uses: true
 
 globals:
@@ -762,87 +797,52 @@ substitutions:
   PAGE_COUNT: "5"
   TIMERS_PAGE: "2000"
   HA_PAGE: "1000"
+  #### BATTERY ####
+  BATTERY_FULL: "3.8"
+  BATTERY_HIGH: "3.5"
+  BATTERY_LOW: "3.2"
   #### ICONS ####
-  AWAKE_ICON: "󰇵"
-  SLEEP_ICON: "󰒲"
-  CHARGING_ICON: "󱐋"
-  OK_WIFI_ICON: "󰖩"
-  NO_WIFI_ICON: "󰖪"
-  OK_NTP_ICON: "󰸞"
-  NO_NTP_ICON: "󱎘"
-  TIMER_ICON: "󰔛"
-  HA_ICON: "󰟐"
-  BRIGHT_LIGHT_ICON: "󰃞"
-  LOW_LIGHT_ICON: "󰃟"
-  NIGHT_LIGHT_ICON: "󰃝"
-  LIGHTBULB_ON_ICON: "󰌵"
-  LIGHTBULB_OFF_ICON: "󰌶"
-  BELL_ICON: "󰂞"
-  BATTERY_FULL: "󰁹"
-  BATTERY_HIGH: "󰂀"
-  BATTERY_LOW: "󰁼"
-  BATTERY_EMPTY: "󰂎"
-  # City:
-  CITY: "󰅆"
-  CITY2: "󰨶"
-  CITY3: "󰦑"
-  CASTLE: "󰄚"
-  DINO: "󱍢"
-  HOUSE: "󰴕"
-  HOSP: "󰋡"
-  TREE: "󰐅"
-  CHESS: "󰡛"
-  TRUCK: "󰔽"
-  # Sky:
-  STAR: "󰦥"
-  SHSTAR: "󱝁"
-  STARS: "󱕅"
-  HELI: "󰫂"
-  BALLOON: "󰀜"
-  BIRD: "󱗆"
-  SPINV: "󰯉"
-  ISS: "󱎃"
-  UFO: "󱃅"
-  SATEL: "󰑱"
+  <<: !include icons.yaml
 
 font:
   # https://freefonts.co/fonts/futura-bold
   # https://github.com/Templarian/MaterialDesign-Webfont/tree/master/fonts
 
   - id: time_font
-    file: "fonts/Futura Bold.otf"
+    file: "fonts/Futura Bold/Futura Bold.otf"
     size: 64
     glyphs: ":0123456789"
 
   - id: date_font
-    file: "fonts/Futura Bold.otf"
+    file: "fonts/Futura Bold/Futura Bold.otf"
     size: 28
     glyphs: ":°'-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz"
 
   - id: small_font
-    file: "fonts/Futura Bold.otf"
+    file: "fonts/Futura Bold/Futura Bold.otf"
     size: 16
     glyphs: "().:°'-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz"
 
-  - file: fonts/materialdesignicons-webfont.ttf
+  - file: fonts/mdi/fonts/materialdesignicons-webfont.woff
     id: icon_font
     size: 24
     glyphs:
       - "$AWAKE_ICON"
       - "$SLEEP_ICON"
-      - "$CHARGING_ICON"
       - "$OK_WIFI_ICON"
       - "$NO_WIFI_ICON"
       - "$OK_NTP_ICON"
       - "$NO_NTP_ICON"
       - "$BELL_ICON"
-      - "$BATTERY_FULL"
-      - "$BATTERY_HIGH"
-      - "$BATTERY_LOW"
-      - "$BATTERY_EMPTY"
+      - "$BATTERY_CHARGING_ICON"
+      - "$BATTERY_FULL_ICON"
+      - "$BATTERY_HIGH_ICON"
+      - "$BATTERY_LOW_ICON"
+      - "$BATTERY_EMPTY_ICON"
+      - "$BATTERY_UNKNOWN_ICON"
 
   - id: weather_icon_font
-    file: fonts/materialdesignicons-webfont.ttf
+    file: fonts/mdi/fonts/materialdesignicons-webfont.woff
     size: 36
     glyphs:
       - "\U000F0590" # weather-cloudy
@@ -944,15 +944,15 @@ switch:
     platform: gpio
 
 i2c:
-  scan: true
-  sda: $I2C_SDA
-  scl: $I2C_SCL
+  scan: false
+  sda: $I2C_SDA_PIN
+  scl: $I2C_SCL_PIN
 
 spi:
-  # SPI_SS ??
-  mosi_pin: $SPI_MOSI
-  miso_pin: $SPI_MISO
-  clk_pin: $SPI_SCK
+  # SPI_SS_PIN ??
+  mosi_pin: $SPI_MOSI_PIN
+  miso_pin: $SPI_MISO_PIN
+  clk_pin: $SPI_SCK_PIN
 
 sun:
   id: sol

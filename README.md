@@ -1,12 +1,14 @@
 # ESPHome-for-Watchy
 
+ESPHome YAML: [./watchy.yaml](./watchy.yaml)
+
 Watchy is an open-hardware, ESP32 wrist watch with e-paper display designed by SQFMI.
 
 https://watchy.sqfmi.com/
 
 https://watchy.sqfmi.com/docs/hardware
 
-This project is a minimal ESPHome configuration file for the Watchy hardware.
+This project is a functional ESPHome configuration file for the Watchy hardware.
 
 https://esphome.io/
 

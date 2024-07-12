@@ -244,7 +244,7 @@ display:
           it.printf(w, 0, id(icon_font), TextAlign::TOP_RIGHT,
             "%s",
             id(wifi_id).is_disabled() ? (id(keep_awake) ? "$AWAKE_ICON" : "") : (id(wifi_id).is_connected() ? "$OK_WIFI_ICON"  : "$NO_WIFI_ICON")
-          );   
+          );
 
       - id: ha_page
         lambda: |-
@@ -373,7 +373,7 @@ binary_sensor:
 
   - id: power_on_button
     pin:
-      number: $BUTTON_LEFT_TOP
+      number: $BUTTON_LEFT_TOP_PIN
       allow_other_uses: true
     platform: gpio
     on_click:
@@ -389,7 +389,7 @@ binary_sensor:
 
   - id: deep_sleep_button
     pin:
-      number: $BUTTON_LEFT_TOP
+      number: $BUTTON_LEFT_TOP_PIN
       allow_other_uses: true
     platform: gpio
     filters:
@@ -405,7 +405,7 @@ binary_sensor:
 
   - id: timer_button
     pin:
-      number: $BUTTON_LEFT_BOTTOM
+      number: $BUTTON_LEFT_BOTTOM_PIN
       allow_other_uses: true
     platform: gpio
     on_click:
@@ -421,7 +421,7 @@ binary_sensor:
 
   - id: cancel_active_timer_button
     pin:
-      number: $BUTTON_LEFT_BOTTOM
+      number: $BUTTON_LEFT_BOTTOM_PIN
       allow_other_uses: true
     platform: gpio
     filters:
@@ -437,7 +437,7 @@ binary_sensor:
 
   - id: clear_all_timers_button
     pin:
-      number: $BUTTON_LEFT_BOTTOM
+      number: $BUTTON_LEFT_BOTTOM_PIN
       allow_other_uses: true
     platform: gpio
     filters:
@@ -457,7 +457,7 @@ binary_sensor:
 
   - id: page_cycle_button
     pin:
-      number: $BUTTON_RIGHT_TOP
+      number: $BUTTON_RIGHT_TOP_PIN
       allow_other_uses: true
     platform: gpio
     on_click:
@@ -471,7 +471,7 @@ binary_sensor:
 
   - id: epaper_display_clean_refresh
     pin:
-      number: $BUTTON_RIGHT_TOP
+      number: $BUTTON_RIGHT_TOP_PIN
       allow_other_uses: true
     platform: gpio
     filters:
@@ -490,7 +490,7 @@ binary_sensor:
 
   - id: right_buttom_button
     pin:
-      number: $BUTTON_RIGHT_BOTTOM
+      number: $BUTTON_RIGHT_BOTTOM_PIN
       allow_other_uses: false
     platform: gpio
     on_press:
@@ -665,13 +665,13 @@ deep_sleep:
   esp32_ext1_wakeup:
     mode: ANY_HIGH
     pins:
-      - number: $BUTTON_LEFT_TOP
+      - number: $BUTTON_LEFT_TOP_PIN
         allow_other_uses: true
-      # - number: $BUTTON_LEFT_BOTTOM
+      # - number: $BUTTON_LEFT_BOTTOM_PIN
       #   allow_other_uses: true
-      # - number: $BUTTON_RIGHT_TOP
+      # - number: $BUTTON_RIGHT_TOP_PIN
       #   allow_other_uses: true
-      # - number: $BUTTON_RIGHT_BOTTOM
+      # - number: $BUTTON_RIGHT_BOTTOM_PIN
       #   allow_other_uses: true
 
 globals:
@@ -747,10 +747,10 @@ substitutions:
   TIMERS_PAGE: "2000"
   HA_PAGE: "1000"
   #### PINS ####
-  BUTTON_LEFT_TOP: "25"
-  BUTTON_LEFT_BOTTOM: "26"
-  BUTTON_RIGHT_TOP: "35"
-  BUTTON_RIGHT_BOTTOM: "4"
+  BUTTON_LEFT_TOP_PIN: "25"
+  BUTTON_LEFT_BOTTOM_PIN: "26"
+  BUTTON_RIGHT_TOP_PIN: "35"
+  BUTTON_RIGHT_BOTTOM_PIN: "4"
   RTC_INTERRUPT: "27"
   BUZZER: "13"
   BATT_ADC: "34"
