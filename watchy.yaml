@@ -27,7 +27,6 @@ esphome:
 
           if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED) {
             // Keep wifi on after OTA update:
-            id(keep_awake) = true;
             id(wifi_id).enable();
           }
 
