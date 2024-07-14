@@ -1,6 +1,27 @@
 ## Watchy ##
 # https://watchy.sqfmi.com/docs/hardware
 
+substitutions:
+  #### SECRETS ####
+  <<: !include secrets.yaml
+  #### PARAMS ####
+  ID: "1"
+  NAME: watchy$ID  
+  VERSION: "3"
+  <<: !include pins_v3.yaml
+  #### FACES AND MODES ####
+  FACE_COUNT: "5"
+  MODE_FACES: "0"
+  MODE_TIMERS: "1"
+  MODE_HA: "2"
+  MODE_QR: "3"
+  #### BATTERY ####
+  BATTERY_FULL: "3.8"
+  BATTERY_HIGH: "3.5"
+  BATTERY_LOW: "3.2"
+  #### ICONS ####
+  <<: !include mdi.yaml
+
 esphome:
   name: $NAME
   includes:
@@ -92,6 +113,12 @@ display:
           it.printf(w/2-10, h/2, id(time_font), TextAlign::CENTER_RIGHT, "%d", now.hour);
           it.printf(w/2+10, h/2, id(time_font), TextAlign::CENTER_LEFT, "%02d", now.minute);
 
+          if (now.hour <= 9) {
+            it.printf(0, h/2, id(mdi), TextAlign::CENTER_LEFT, "%s",
+              now.month == 1 && now.day_of_week == 1 ? "$mdiPartyPopper" : ""
+            );
+          }
+
           // Weather //
           if (id(weather_temp_max) != -1000.0 && id(weather_age_hours) <= 12) {
             it.printf(0, h, id(date_font), TextAlign::BOTTOM_LEFT, "%.0f°", id(weather_temp_max));
@@ -139,7 +166,7 @@ display:
           auto w = it.get_width();
           auto h = it.get_height();
           const auto now = id(ntp).now();
-          const bool n = id(page) == 1;
+          const bool n = id(face) == 1;
 
           // Center Dot //
           it.filled_circle(w/2, w/2, 5);
@@ -268,7 +295,7 @@ display:
           const int lh = 34;
           const int lo = 38;
 
-          it.printf(w/2, l, id(date_font), TextAlign::TOP_CENTER, "%d:%02d", 12, 34);
+          it.printf(w/2, l, id(date_font), TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
           l += lh * 1.5;
 
           it.print(0, l, id(small_font), TextAlign::CENTER_LEFT, "Add your own code here.");
@@ -376,6 +403,37 @@ display:
           it.print(w/2, h/2, id(date_font), TextAlign::BOTTOM_CENTER, "DON'T");
           it.print(w/2, h/2, id(date_font), TextAlign::TOP_CENTER, "PANIC");
 
+      - id: qr_page
+        lambda: |-
+          const auto w = it.get_width();
+          const auto h = it.get_height();
+          const auto now = id(ntp).now();
+
+          auto qr = id(qr_vcard);
+          auto icon = "$mdiAccountBox";
+
+          if (id(qr_mode) == 1) {
+            qr = id(qr_website);
+            icon = "$mdiWebBox";
+          } else if (id(qr_mode) == 2) {
+            qr = id(qr_rss);
+            icon = "$mdiRssBox";
+          }
+
+          const int offset = 16;
+          const auto size = qr->get_size();
+          const int scale = int(float(w - offset) / float(size));
+          const auto x = (w / 2) - ((size * scale) / 2);
+          const auto y = ((h - offset) / 2) - ((size * scale) / 2) + offset;
+          
+          it.print(0, 0, id(mdi_small), TextAlign::TOP_LEFT, icon);
+          it.printf(w/2, -2, id(small_font), TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
+          it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
+            "%s",
+            id(wifi_id).is_disabled() ? (id(keep_awake) ? "$mdiEmoticonHappyOutline" : "") : (id(wifi_id).is_connected() ? "$mdiWifi"  : "$mdiWifiOff")
+          );
+          it.qr_code(x, y, qr, Color(255,255,255), scale);          
+
 binary_sensor:
   # https://esphome.io/components/binary_sensor
 
@@ -427,7 +485,7 @@ binary_sensor:
       then:
         - lambda: |-
             id(counter) = 0;
-            id(page) = id(page) % 1000 + $TIMERS_PAGE;
+            id(mode) = $MODE_TIMERS;
             id(active_timer) = (id(active_timer) + 1) % 5;
             id(timers)[id(active_timer)] = id(ntp).utcnow().timestamp;
         - script.execute: update_glass
@@ -442,7 +500,8 @@ binary_sensor:
       delayed_on: 1s
     on_press:
       - lambda: |-
-          id(page) = id(page) % 1000 + $TIMERS_PAGE;
+          id(counter) = 0;      
+          id(mode) = $MODE_TIMERS;
           id(timers)[id(active_timer)] = 0;
           if (id(active_timer) != 0) {
             id(active_timer) -= 1;
@@ -459,7 +518,8 @@ binary_sensor:
       delayed_on: 2s
     on_press:
       - lambda: |-
-          id(page) = id(page) % 1000 + $TIMERS_PAGE;
+          id(counter) = 0;
+          id(mode) = $MODE_TIMERS;
           id(active_timer) = 0;
           id(timers)[0] = id(ntp).utcnow().timestamp;
           id(timers)[1] = 0;
@@ -470,7 +530,7 @@ binary_sensor:
 
   ## Right Top ##
 
-  - id: page_cycle_button
+  - id: face_cycle_button
     pin:
       number: $BUTTON_RIGHT_TOP_PIN
       allow_other_uses: true
@@ -482,10 +542,14 @@ binary_sensor:
       then:
         - lambda: |-
             id(counter) = 0;
-            id(page) = id(page) >= 1000 ? id(page) % 1000 : ((id(page) + 1) % $PAGE_COUNT);
+            if (id(mode) == $MODE_FACES) {
+              id(face) = (id(face) + 1) % $FACE_COUNT;
+            } else {
+              id(mode) = $MODE_FACES;
+            }
         - script.execute: update_glass
 
-  - id: epaper_display_clean_refresh
+  - id: epaper_display_clean_refresh_button
     pin:
       number: $BUTTON_RIGHT_TOP_PIN
       allow_other_uses: true
@@ -505,17 +569,38 @@ binary_sensor:
 
   ## Right Bottom ##
 
-  - id: right_buttom_button
+  - id: ha_qr_mode_button
     pin:
       number: $BUTTON_RIGHT_BOTTOM_PIN
-      allow_other_uses: false
+      allow_other_uses: true
       inverted: $BUTTON_PIN_INVERTED
     platform: gpio
+    on_click:
+      min_length: 0ms
+      max_length: 1s
+      then:    
+        - lambda: |-
+            id(counter) = 0;
+            if (id(mode) == $MODE_QR) {
+              id(qr_mode) = (id(qr_mode) + 1) % 3;
+            } else {
+              id(mode) = $MODE_HA;
+            }
+        - script.execute: update_glass
+
+  - id: qr_codes_mode_button
+    pin:
+      number: $BUTTON_RIGHT_BOTTOM_PIN
+      allow_other_uses: true
+      inverted: $BUTTON_PIN_INVERTED
+    platform: gpio
+    filters:
+      delayed_on: 1s
     on_press:
       - lambda: |-
           id(counter) = 0;
-          id(page) = id(page) % 1000 + $HA_PAGE;
-      - script.execute: update_glass
+          id(mode) = $MODE_QR;
+      - script.execute: update_glass        
 
   ## Charging ##
 
@@ -529,16 +614,11 @@ wifi:
   # https://esphome.io/components/wifi.html
   id: wifi_id
   power_save_mode: HIGH
-  networks:
-    - ssid: $WIFI_SSID
-      password: $WIFI_PASSWORD
-    - ssid: $RC_WIFI_SSID
-      password: $RC_WIFI_PASSWORD
-    - ssid: $PH_WIFI_SSID
-      password: $PH_WIFI_PASSWORD
-  # fast_connect: true
-  reboot_timeout: 0s
   enable_on_boot: false
+  ssid: $WIFI_SSID
+  password: $WIFI_PASSWORD
+  fast_connect: true
+  reboot_timeout: 0s
   on_connect:
     - component.update: glass
     - lambda: |-
@@ -555,26 +635,33 @@ script:
   - id: update_glass
     then:
       - display.page.show: !lambda |-
-          if (id(page) - id(page) % 1000 == $TIMERS_PAGE) {
+          if (id(mode) == $MODE_FACES) {
+            if (id(face) == 0) {
+              return id(digital_clock_page);
+            } else if (id(face) == 1) {
+              return id(circular_12hour_clock_page);
+            } else if (id(face) == 2) {
+              return id(circular_roman_clock_page);
+            } else if (id(face) == 3) {
+              return id(system_info_page);
+            } else if (id(face) == 4) {
+              return id(dp_page);
+            } else {
+              ESP_LOGE("watchy", "Invalid page id!");
+              return id(digital_clock_page);
+            }
+          } else if (id(mode) == $MODE_TIMERS) {
             return id(timers_page);
-          } else if (id(page) - id(page) % 1000 == $HA_PAGE) {
+          } else if (id(mode) == $MODE_HA) {
             return id(ha_page);
-          } else if (id(page) == 0) {
-            return id(digital_clock_page);
-          } else if (id(page) == 1) {
-            return id(circular_12hour_clock_page);
-          } else if (id(page) == 2) {
-            return id(circular_roman_clock_page);
-          } else if (id(page) == 3) {
-            return id(system_info_page);
-          } else if (id(page) == 4) {
-            return id(dp_page);
+          } else if (id(mode) == $MODE_QR) {
+            return id(qr_page);
           } else {
-            ESP_LOGE("watchy", "Invalid page id!");
+            ESP_LOGE("watchy", "Invalid mode id!");
             return id(digital_clock_page);
           }
       - component.update: glass
-      - lambda: "id(glass).set_full_update_every(1000);" # epaper full wipe clean
+      - lambda: "id(glass).set_full_update_every(1000);" # prevent epaper full wipe clean
 
   - id: update_weather
     mode: single
@@ -739,7 +826,15 @@ globals:
     type: boolean
     initial_value: "false"
   ## Persistent ##
-  - id: page
+  - id: face
+    type: int
+    restore_value: yes
+    initial_value: "0"  
+  - id: mode
+    type: int
+    restore_value: yes
+    initial_value: "0"
+  - id: qr_mode
     type: int
     restore_value: yes
     initial_value: "0"
@@ -779,29 +874,6 @@ globals:
     type: int[5]
     restore_value: yes
 
-substitutions:
-  #### PARAMS ####
-  ID: "1"
-  NAME: watchy$ID
-  #### SECRETS ####
-  <<: !include secrets.yaml
-  #### PINS ####
-  VERSION: "3"
-  <<: !include pins_v3.yaml
-  #### WEATHER ####
-  UNITS: metric
-  LANG: en
-  #### PAGES ####
-  PAGE_COUNT: "5"
-  TIMERS_PAGE: "2000"
-  HA_PAGE: "1000"
-  #### BATTERY ####
-  BATTERY_FULL: "3.8"
-  BATTERY_HIGH: "3.5"
-  BATTERY_LOW: "3.2"
-  #### ICONS ####
-  <<: !include mdi.yaml
-
 font:
   # https://freefonts.co/fonts/futura-bold
   # https://github.com/Templarian/MaterialDesign-Webfont/tree/master/fonts
@@ -835,6 +907,9 @@ font:
       - "$mdiBattery30"
       - "$mdiBattery10"
       - "$mdiBatteryUnknown"
+      - "$mdiAccountBox"
+      - "$mdiWebBox"
+      - "$mdiRssBox"
 
   - id: mdi
     file: fonts/mdi/fonts/materialdesignicons-webfont.woff
@@ -894,6 +969,7 @@ font:
       - "$mdiSpaceStation"
       - "$mdiUfoOutline"
       - "$mdiSatelliteVariant"
+      - "$mdiPartyPopper"
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -956,6 +1032,19 @@ http_request:
   id: http_request_data
   verify_ssl: false
 
+qr_code:
+  - id: qr_vcard
+    ecc: LOW
+    value: $QR_VCARD
+
+  - id: qr_website
+    ecc: LOW
+    value: $QR_WEBSITE_URL
+
+  - id: qr_rss
+    ecc: LOW
+    value: $QR_RSS_URL
+
 external_components:
   - components: [waveshare_epaper]
     source:
@@ -964,3 +1053,6 @@ external_components:
       type: git
       url: https://github.com/multipolygon/esphome
       ref: dev
+
+
+
