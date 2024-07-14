@@ -23,13 +23,17 @@ It is a complete, self-contained, drop-in replacement for the original firmware.
 Update: New (2024) v3 module arrived via [Mouser Electronics](https://au.mouser.com/ProductDetail/SQFMI/SQFMI-WATCHY-10?qs=DRkmTr78QARN9VSJRzqRxw%3D%3D). It has hardware changes including ESP32-S3, RTC and rearranged pins.
 
 <div>
+<img src="doc/v3/07.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/mods/wrist-side-profile.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
+
+<div>
 <img src="doc/v3/01.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/v3/02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/v3/03.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/v3/04.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/v3/05.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/v3/06.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/v3/07.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
 TODO:
@@ -48,8 +52,6 @@ Sichiray via AliExpress
 
 <div>
 <img src="doc/buttons.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/03.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/04.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
@@ -64,7 +66,7 @@ Sichiray via AliExpress
 <img src="doc/14.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-## Design Philosophy
+## Design Approach
 
 ### Low Power Usage
 
@@ -88,34 +90,36 @@ Multiple buttons and long-press buttons remain free for your own extensions.
 
 Intentionally, this project does not include any on-watch user settings screens or user configuration. The idea is that the ESPHome YAML file is simple and easy enough for it to be edited directly, and re-flashed to the ESP32 device. **The YAML _is_ the settings UI and the main feature of an open-source, programmable, WiFi watch is that it is easily reprogrammable over WiFi.**
 
-# User Manual
+## User Manual
 
-## Buttons
+### Buttons
 
 <img src="doc/buttons.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 
-### Top Left
+#### Top Left
 
 - Press: Power On
 - 2nd Press: Wifi On
 - Long Press (1s): Go to sleep
 
-### Top Right
+#### Top Right
 
 - Press: Cycle watch faces (digital, hands, roman, info, etc)
 - Long Press (1s): Full-refresh ePaper display (this clears away ghost pixels)
 
-### Bottom Left
+#### Bottom Left
 
 - Press: Start new timer (and show timers page) (up to 5 timers)
 - Long Press (1s): Cancel last active timer
 - Long Press (2s): Cancel all tiemrs
 
-### Bottom Right
+#### Bottom Right
 
 - Press: Show Home Assistant page (intentionally left unused for custom features)
+- Long Press (1s): Show QR Codes
+  - Press (in QR mode): Cycle QR codes
 
-## Weather
+### Weather
 
 The watch shows a weather forecast over the upcoming 12 hours. This is a simple, practical, human-ergonomics amount of time for planning ahead using a wrist watch.
 
@@ -124,7 +128,7 @@ The watch shows a weather forecast over the upcoming 12 hours. This is a simple,
 <img src="doc/weather02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-## Timers Operation
+### Timers Operation
 
 Press the left-bottom button to show the timers page:
 
@@ -150,7 +154,22 @@ When the page is full, a button press will discard the oldest timer and start a 
 <img src="doc/18.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
+### QR-Code Contact Card / ID Badge
+
+You know... just in case you accidentally find yourself at a meet-up or conference without a phone, tablet or business card and can't remember your own email or website addresses, don't panic, you have your watch!
+
+([vCard](https://nfraprado.net/post/vcard-rss-as-an-alternative-to-social-media.html) is neat because your information can be scanned directly in to the recipients ~~rolodex~~ contacts app when wifi or internet is unavailable.)
+
+vCard, Website and RSS URL can be set in `secrets.yaml`.
+
+<img src="doc/qr-vcard.jpeg" title="vCard" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/qr-web.jpeg" title="Website" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/qr-rss.jpeg" title="RSS" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+
 ## Install / Flash
+
+1. `cp secrets.example.yaml secrets.yaml`
+1. Edit your secrets.yaml
 
 ### Fonts
 
@@ -163,8 +182,6 @@ Download and save `materialdesignicons-webfont.ttf` from:
 https://github.com/Templarian/MaterialDesign-Webfont/tree/master/fonts
 
 Save the files to `fonts` directory.
-
-TODO: Do the licenses allow inclusion in this repo?
 
 ### Install ESPHome on Mac OSX
 
@@ -198,3 +215,22 @@ To upload new firmware/watchfaces to Watchy, you will need to enter **bootloader
 
 1. Press and hold the top 2 buttons for more than 4 seconds, then release the **Right button first**, before releasing the Back button
 1. Watchy should now reset, wait a few seconds for it to boot up and refresh the screen
+
+## Mods
+
+_Disclaimer: This following is not advice._
+
+I have had the USB socket break off a previous watch so I added epoxy glue around edges of socket and battery clip to secure them.
+
+Then I painted the back electronic components with silicone to keep dry and clean.
+
+<img src="doc/mods/silicone.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+
+I discarded the huge, clumsy watch case that comes in the box! Threading a Garmin Fenix band through the Watchy PCB slots, I attached the battery to the band under the wrist area. This resulted in a hidden battery and thin watch profile.
+
+<img src="doc/mods/full-band.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/mods/battery-ductape.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/mods/battery-ductape-2.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/mods/strap-outside.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/mods/band-side-view.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/mods/wrist-side-profile.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />

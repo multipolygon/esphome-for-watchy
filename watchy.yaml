@@ -420,7 +420,7 @@ display:
             icon = "$mdiRssBox";
           }
 
-          const int offset = 16;
+          const int offset = 18;
           const auto size = qr->get_size();
           const int scale = int(float(w - offset) / float(size));
           const auto x = (w / 2) - ((size * scale) / 2);
