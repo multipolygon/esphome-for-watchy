@@ -162,9 +162,11 @@ You know... just in case you accidentally find yourself at a meet-up or conferen
 
 vCard, Website and RSS URL can be set in `secrets.yaml`.
 
+<div>
 <img src="doc/qr-vcard.jpeg" title="vCard" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/qr-web.jpeg" title="Website" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/qr-rss.jpeg" title="RSS" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
 
 ## Install / Flash
 
@@ -228,9 +230,11 @@ Then I painted the back electronic components with silicone to keep dry and clea
 
 I discarded the huge, clumsy watch case that comes in the box! Threading a Garmin Fenix band through the Watchy PCB slots, I attached the battery to the band under the wrist area. This resulted in a hidden battery and thin watch profile.
 
+<div>
 <img src="doc/mods/full-band.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/mods/battery-ductape.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/mods/battery-ductape-2.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/mods/strap-outside.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/mods/band-side-view.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/mods/wrist-side-profile.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
