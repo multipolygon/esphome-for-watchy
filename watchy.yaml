@@ -26,7 +26,7 @@ esphome:
   name: $NAME
   includes:
     # - mdi.h
-    - weather.h
+    - icons.h
   on_boot:
     then:
       - delay: 1ms
