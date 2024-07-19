@@ -10,14 +10,14 @@ substitutions:
   VERSION: "3"
   <<: !include pins_v3.yaml
   #### FACES AND MODES ####
-  FACE_COUNT: "5"
+  FACE_COUNT: "4"
   MODE_FACES: "0"
   MODE_TIMERS: "1"
   MODE_HA: "2"
   MODE_QR: "3"
   #### BATTERY ####
   BATTERY_FULL: "3.8"
-  BATTERY_HIGH: "3.5"
+  BATTERY_HIGH: "3.6"
   BATTERY_LOW: "3.2"
   #### ICONS ####
   <<: !include mdi.yaml
@@ -25,48 +25,41 @@ substitutions:
 esphome:
   name: $NAME
   includes:
+    # - mdi.h
     - weather.h
   on_boot:
-    priority: 700
     then:
-      # - delay: 5ms
+      - delay: 1ms
       # - pcf8563.read_time:
-      - delay: 5ms
+      - component.update: battery
       - lambda: |-
-          id(weather_age_hours) = (id(ntp).utcnow().timestamp - id(weather_age)) / (60*60);
-
+          randomSeed(esp_random());
           const auto now = id(ntp).now();
+
           id(chime) = (now.hour ==  8 && now.minute == 0)
                    || (now.hour == 12 && now.minute == 0)
                    || (now.hour == 16 && now.minute == 0)
                    ;
+
+          id(weather_age_hours) = (id(ntp).utcnow().timestamp - id(weather_age)) / (60*60);
 
           if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_TIMER) {
             ESP_LOGI("watchy", "Keep awake mode.");
             id(keep_awake) = true;
           }
 
-          if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED) {
-            // Keep wifi on after OTA update:
-            id(wifi_id).enable();
-          }
-
-          if ((now.hour == 0 && now.minute == 0) || !id(ntp).now().is_valid()) {
-            ESP_LOGI("watchy", "Update clock from NTP.");
-            id(updating_time) = true;
-            id(wifi_id).enable();
-          }
-
-          if (now.hour % 3 == 0 && now.minute == 0) {
+          if ((now.hour % 3 == 0 && now.minute == 0) || esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED) {
             ESP_LOGI("watchy", "Update weather.");
             id(updating_weather) = true;
             id(updating_time) = true;
             id(wifi_id).enable();
+          } else if (!id(keep_awake) && id(mode) == $MODE_FACES) {
+            if (random(1000) == 0) {
+              id(chime) = true;
+              id(face) = id(face) + 1000;
+            }
           }
-      - component.update: sunrise
-      - component.update: sunset
-      - component.update: battery
-      - delay: 5ms
+
       - if:
           condition:
             lambda: return id(keep_awake) || id(chime);
@@ -113,10 +106,27 @@ display:
           it.printf(w/2-10, h/2, id(time_font), TextAlign::CENTER_RIGHT, "%d", now.hour);
           it.printf(w/2+10, h/2, id(time_font), TextAlign::CENTER_LEFT, "%02d", now.minute);
 
+          const int m = now.month;
+          const int d = now.day_of_month;
+          const int md = m * 100 + d;
+          const int FRIDAY = 6;
+          const char *icon = "";
+          if (
+            m == $BIRTHMONTH && d == $BIRTHDAY ||
+            m == $BIRTHMONTH1 && d == $BIRTHDAY1 ||
+            m == $BIRTHMONTH2 && d == $BIRTHDAY2
+          ) {
+            icon = mdiCakeVariantOutline;
+          } else if (calendarIcons.find(md) != calendarIcons.end()) {
+            icon = calendarIcons[md];
+          } else if (now.day_of_year == 256) {
+            icon = mdiCodeBraces;
+          } else if (now.day_of_week == FRIDAY && d == 13) {
+            icon = mdiClover;
+          }
+
           if (now.hour <= 9) {
-            it.printf(0, h/2, id(mdi), TextAlign::CENTER_LEFT, "%s",
-              now.month == 1 && now.day_of_week == 1 ? "$mdiPartyPopper" : ""
-            );
+            it.printf(0, h/2, id(mdi), TextAlign::CENTER_LEFT, "%s", icon);
           }
 
           // Weather //
@@ -125,24 +135,24 @@ display:
           }
           if (id(weather_code_0) != 0) {
             it.printf(w, h, id(mdi), TextAlign::BOTTOM_RIGHT, "%s%s%s%s",
-              id(weather_age_hours) <= 3 ? weather_icon_map[id(weather_code_0)].c_str() : "",
-              id(weather_age_hours) <= 6 ? weather_icon_map[id(weather_code_1)].c_str() : "",
-              id(weather_age_hours) <= 9 ? weather_icon_map[id(weather_code_2)].c_str() : "",
-              id(weather_age_hours) <= 12 ? weather_icon_map[id(weather_code_3)].c_str() : ""
+              id(weather_age_hours) <= 3 ? weather_icon_map[id(weather_code_0)] : "",
+              id(weather_age_hours) <= 6 ? weather_icon_map[id(weather_code_1)] : "",
+              id(weather_age_hours) <= 9 ? weather_icon_map[id(weather_code_2)] : "",
+              id(weather_age_hours) <= 12 ? weather_icon_map[id(weather_code_3)] : ""
             );
           }
 
           // Status Icons //
           it.printf(w/2, h/2+46, id(mdi_small), TextAlign::CENTER,
             "%s%s%s",
-            id(chime) ? "$mdiBellRingOutline" : "",
-            id(wifi_id).is_disabled() ? (id(keep_awake) ? "$mdiEmoticonHappyOutline" : "") : (id(wifi_id).is_connected() ? "$mdiWifi"  : "$mdiWifiOff"),
-            id(is_charging).state ? "$mdiBatteryCharging100" : (
-              !id(battery).has_state() ? "$mdiBatteryUnknown" : (
-                id(battery).state >= $BATTERY_FULL ? "$mdiBattery90" : (
-                  id(battery).state >= $BATTERY_HIGH ? "$mdiBattery70" : (
-                    id(battery).state >= $BATTERY_LOW ? "$mdiBattery30" :
-                      "$mdiBattery10"
+            id(chime) ? mdiBellRingOutline : "",
+            id(wifi_id).is_disabled() ? (id(keep_awake) ? mdiEmoticonHappyOutline : "") : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff),
+            id(is_charging).state ? mdiBatteryCharging100 : (
+              !id(battery).has_state() ? mdiBatteryUnknown : (
+                id(battery).state > $BATTERY_FULL ? mdiBattery : (
+                  id(battery).state > $BATTERY_HIGH ? mdiBattery70 : (
+                    id(battery).state > $BATTERY_LOW ? mdiBattery30 :
+                      mdiBattery10
                   )
                 )
               )
@@ -152,10 +162,11 @@ display:
           // Active Timer //
           if (id(timers)[id(active_timer)] != 0) {
             int activeTimer = id(ntp).utcnow().timestamp - id(timers)[id(active_timer)];
-            if (activeTimer < 24 * 60 * 60) {
+            if (activeTimer < 100 * 60 * 60) { // Limit to 100 hours
               it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER,
                 "%dh %02dm",
-                (activeTimer) / (60*60), (activeTimer / 60) % 60
+                (activeTimer) / (60*60),
+                (activeTimer / 60) % 60
               );
             }
           }
@@ -205,7 +216,7 @@ display:
 
           // Minute Hand //
           double mn = (now.minute / 60.0 * 360.0 - 90.0) * (M_PI / 180.0);
-          for (int x=-2; x<=2; ++x) {
+          for (int x=-1; x<=1; ++x) {
             for (int y=-1; y<=1; ++y) {
               it.line(w/2 +x, h/2 +y, w/2.0 + w/2.5 * cos(mn) +x, h/2.0 + h/2.5 * sin(mn) +y);
             }
@@ -213,22 +224,38 @@ display:
 
           // Weather Icons //
           if (id(weather_age_hours) <= 3) {
-            it.printf(w, 0, id(mdi), TextAlign::TOP_RIGHT, "%s", weather_icon_map[rotateWeatherCode(0, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+            it.printf(w, 0, id(mdi), TextAlign::TOP_RIGHT, "%s", weather_icon_map[rotateWeatherCode(0, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))]);
           }
           if (id(weather_age_hours) <= 6) {
-            it.printf(w, h, id(mdi), TextAlign::BOTTOM_RIGHT, "%s", weather_icon_map[rotateWeatherCode(1, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+            it.printf(w, h, id(mdi), TextAlign::BOTTOM_RIGHT, "%s", weather_icon_map[rotateWeatherCode(1, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))]);
           }
           if (id(weather_age_hours) <= 9) {
-            it.printf(0, h, id(mdi), TextAlign::BOTTOM_LEFT, "%s", weather_icon_map[rotateWeatherCode(2, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+            it.printf(0, h, id(mdi), TextAlign::BOTTOM_LEFT, "%s", weather_icon_map[rotateWeatherCode(2, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))]);
           }
           if (id(weather_age_hours) <= 12) {
-            it.printf(0, 0, id(mdi), TextAlign::TOP_LEFT, "%s", weather_icon_map[rotateWeatherCode(3, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+            it.printf(0, 0, id(mdi), TextAlign::TOP_LEFT, "%s", weather_icon_map[rotateWeatherCode(3, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))]);
           }
 
-          // Wifi status //
+          // Status Icons //
+          it.printf(w*1/4, h/2, id(mdi_small), TextAlign::CENTER,
+            "%s%s",
+            id(chime) ? mdiBellRingOutline : "",
+            id(wifi_id).is_disabled() ? (id(keep_awake) ? mdiEmoticonHappyOutline : "") : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff)
+          );
+
+          // Battery Icon //
           it.printf(w*3/4, h/2, id(mdi_small), TextAlign::CENTER,
             "%s",
-            id(wifi_id).is_disabled() ? (id(keep_awake) ? "$mdiEmoticonHappyOutline" : "") : (id(wifi_id).is_connected() ? "$mdiWifi"  : "$mdiWifiOff")
+            id(is_charging).state ? mdiBatteryCharging100 : (
+              !id(battery).has_state() ? mdiBatteryUnknown : (
+                id(battery).state > $BATTERY_FULL ? mdiBattery : (
+                  id(battery).state > $BATTERY_HIGH ? mdiBattery70 : (
+                    id(battery).state > $BATTERY_LOW ? mdiBattery30 :
+                      mdiBattery10
+                  )
+                )
+              )
+            )
           );
 
       - <<: *clockface
@@ -241,7 +268,7 @@ display:
           const auto now = id(ntp).now();
           const auto utcnow = id(ntp).utcnow();
 
-          it.print(0, 0, id(mdi), TextAlign::TOP_LEFT, "$mdiTimerOutline");
+          it.printf(0, 0, id(mdi_small), TextAlign::TOP_LEFT, mdiTimerOutline);
 
           int l = 0;
           const int lh = 32;
@@ -250,25 +277,38 @@ display:
           it.printf(w/2, l, f, TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
           l += lh * 1.8;
 
-          const std::string abcde = "ABCDE";
+          const char *abcde = "ABCDE";
 
           for (int i=id(active_timer)+1; i<id(active_timer)+6; ++i) {
             int x = i % 5;
             if (id(timers)[x] != 0) {
+              // Timer label:
               it.printf(0, l, id(small_font), TextAlign::CENTER_LEFT, "%c", abcde[x]);
 
-              it.printf(w/2+8, l, f, TextAlign::CENTER_RIGHT, "%2d:%02d",
-                (utcnow.timestamp - id(timers)[x]) / (60*60),
-                ((utcnow.timestamp - id(timers)[x]) / 60) % 60
-              );
+              // Main timer:
 
-              int y = (x + 1) % 5;
+              const int timer = utcnow.timestamp - id(timers)[x];
+              const int timer_hrs = timer / (60*60);
+              const int timer_min = (timer / 60) % 60;
+              if (timer_hrs < 100) {
+                it.printf(w/2+8, l, f, TextAlign::CENTER_RIGHT,
+                  "%2d:%02d",
+                  timer_hrs,
+                  timer_min
+                );
+              }
+
+              // Split timer:
+              int y = (x + 1) % 5; // Previous timer index
               if (id(timers)[y] != 0 && id(timers)[y] >= id(timers)[x]) {
-                int split = id(timers)[y] - id(timers)[x];
-                if (split < 24 * 60 * 60) {
-                  it.printf(w, l, f, TextAlign::CENTER_RIGHT, "%2d:%02d",
-                    split / (60*60),
-                    (split / 60) % 60
+                const int split = id(timers)[y] - id(timers)[x];
+                const int split_hrs = split / (60*60);
+                const int split_min = (split / 60) % 60;
+                if (split_hrs < 100) {
+                  it.printf(w, l, f, TextAlign::CENTER_RIGHT,
+                    "%2d:%02d",
+                    split_hrs,
+                    split_min
                   );
                 }
               }
@@ -280,7 +320,7 @@ display:
           // Wifi status //
           it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
             "%s",
-            id(wifi_id).is_disabled() ? (id(keep_awake) ? "$mdiEmoticonHappyOutline" : "") : (id(wifi_id).is_connected() ? "$mdiWifi"  : "$mdiWifiOff")
+            id(wifi_id).is_disabled() ? (id(keep_awake) ? mdiEmoticonHappyOutline : "") : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff)
           );
 
       - id: ha_page
@@ -289,7 +329,7 @@ display:
           const auto h = it.get_height();
           const auto now = id(ntp).now();
 
-          it.print(0, 0, id(mdi), TextAlign::TOP_LEFT, "$mdiHomeAssistant");
+          it.print(0, 0, id(mdi_small), TextAlign::TOP_LEFT, mdiHomeAssistant);
 
           int l = 0;
           const int lh = 34;
@@ -298,13 +338,13 @@ display:
           it.printf(w/2, l, id(date_font), TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
           l += lh * 1.5;
 
-          it.print(0, l, id(small_font), TextAlign::CENTER_LEFT, "Add your own code here.");
+          it.print(0, l, id(small_font), TextAlign::CENTER_LEFT, "Add your code here.");
           l += lh;
 
           // Wifi status //
           it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
             "%s",
-            id(wifi_id).is_disabled() ? "" : id(wifi_id).is_connected() ? "$mdiWifi"  : "$mdiWifiOff"
+            id(wifi_id).is_disabled() ? "" : id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff
           );
 
       - id: system_info_page
@@ -313,27 +353,13 @@ display:
           const auto h = it.get_height();
           const auto now = id(ntp).now();
 
-          const char* sky[] = {
-            "$mdiStarOutline",
-            "$mdiStarShootingOutline",
-            "$mdiCreationOutline",
-            "$mdiHelicopter",
-            "$mdiAirballoon",
-            "$mdiBird",
-            "$mdiSpaceInvaders",
-            "$mdiSpaceStation",
-            "$mdiUfoOutline",
-            "$mdiSatelliteVariant"
-          };
-          const int skyLen = 10;
-
           if (id(weather_code_0) != 0) {
             it.printf(w/2, 0, id(mdi), TextAlign::TOP_CENTER, "%s%s%s%s%s",
-              weather_icon_map[id(weather_code_0)].c_str(),
-              weather_icon_map[id(weather_code_1)].c_str(),
+              weather_icon_map[id(weather_code_0)],
+              weather_icon_map[id(weather_code_1)],
               sky[random(skyLen)],
-              weather_icon_map[id(weather_code_2)].c_str(),
-              weather_icon_map[id(weather_code_3)].c_str()
+              weather_icon_map[id(weather_code_2)],
+              weather_icon_map[id(weather_code_3)]
             );
           }
 
@@ -352,10 +378,11 @@ display:
           }
           l += lh;
 
-          it.printf(0, l, f, TextAlign::TOP_LEFT, "Wifi: (%d) %s", id(wifi_id).wifi_rssi(), id(wifi_id).wifi_ssid().c_str());
-          l += lh;
-
-          it.printf(0, l, f, TextAlign::TOP_LEFT, "Sun: %s to %s", id(sunrise).state.c_str(), id(sunset).state.c_str());
+          it.printf(0, l, f, TextAlign::TOP_LEFT,
+            "Wifi: %s (%d)", 
+            (id(wifi_id).is_disabled() ? "off" : (id(wifi_id).is_connected() ? id(wifi_id).wifi_ssid() : "n/a")),
+            (id(wifi_id).is_connected() ? id(wifi_id).wifi_rssi() : 0)
+          );
           l += lh;
 
           it.print(0, l, f, TextAlign::TOP_LEFT, "ID: $ID");
@@ -363,34 +390,6 @@ display:
 
           it.printf(0, l, f, TextAlign::TOP_LEFT, "Battery: %.02fV", id(battery).state);
           l += lh;
-
-          const char* city[] = {
-            "$mdiCity",
-            "$mdiCityVariant",
-            "$mdiOfficeBuilding",
-            "$mdiCity",
-            "$mdiCityVariant",
-            "$mdiOfficeBuilding",
-            "$mdiCity",
-            "$mdiCityVariant",
-            "$mdiCityVariant",
-            "$mdiOfficeBuilding",
-            "$mdiCity",
-            "$mdiCity",
-            "$mdiCityVariant",
-            "$mdiOfficeBuilding",
-            "$mdiCity",
-            "$mdiCityVariant",
-            "$mdiOfficeBuilding",
-            "$mdiCity",
-            "$mdiCityVariant",
-            "$mdiOfficeBuilding",
-            "$mdiCastle",
-            "$mdiGoogleDownasaur",
-            "$mdiHospitalBuilding",
-            "$mdiPineTree",
-          };
-          const int cityLen = 24;
 
           for (int x=-1*random(10); x<=w+20; x+=24) {
             it.printf(x, h+6, id(mdi), TextAlign::BOTTOM_LEFT, "%s", city[random(cityLen)]);
@@ -410,14 +409,14 @@ display:
           const auto now = id(ntp).now();
 
           auto qr = id(qr_vcard);
-          auto icon = "$mdiAccountBox";
+          const char *icon = mdiAccountBox;
 
           if (id(qr_mode) == 1) {
             qr = id(qr_website);
-            icon = "$mdiWebBox";
+            icon = mdiWebBox;
           } else if (id(qr_mode) == 2) {
             qr = id(qr_rss);
-            icon = "$mdiRssBox";
+            icon = mdiRssBox;
           }
 
           const int offset = 18;
@@ -430,7 +429,7 @@ display:
           it.printf(w/2, -2, id(small_font), TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
           it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
             "%s",
-            id(wifi_id).is_disabled() ? (id(keep_awake) ? "$mdiEmoticonHappyOutline" : "") : (id(wifi_id).is_connected() ? "$mdiWifi"  : "$mdiWifiOff")
+            id(wifi_id).is_disabled() ? (id(keep_awake) ? mdiEmoticonHappyOutline : "") : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff)
           );
           it.qr_code(x, y, qr, Color(255,255,255), scale);          
 
@@ -636,7 +635,10 @@ script:
     then:
       - display.page.show: !lambda |-
           if (id(mode) == $MODE_FACES) {
-            if (id(face) == 0) {
+            if (id(face) >= 1000) {
+              id(face) = id(face) - 1000;
+              return id(dp_page);
+            } else if (id(face) == 0) {
               return id(digital_clock_page);
             } else if (id(face) == 1) {
               return id(circular_12hour_clock_page);
@@ -644,8 +646,6 @@ script:
               return id(circular_roman_clock_page);
             } else if (id(face) == 3) {
               return id(system_info_page);
-            } else if (id(face) == 4) {
-              return id(dp_page);
             } else {
               ESP_LOGE("watchy", "Invalid page id!");
               return id(digital_clock_page);
@@ -679,7 +679,7 @@ script:
                   // ESP_LOGI("watchy", "Weather status %d %ums.", status_code, duration_ms);
 
                   json::parse_json(body, [](JsonObject root) -> bool {
-                    id(weather_age) = id(ntp).utcnow().timestamp;
+                    id(weather_age) = id(ntp).now().timestamp;
                     id(weather_age_hours) = 0;
 
                     id(weather_code_0) = weatherCode(root["list"][0]["weather"][0]["id"], root["list"][0]["sys"]["pod"]);
@@ -755,7 +755,7 @@ time:
         then:
           # - pcf8563.write_time:
           - lambda: |-
-              if (!id(updating_weather)) {
+              if (id(updating_time) && !id(updating_weather)) {
                 id(glass).set_full_update_every(1);
               }
               id(updating_time) = false;
@@ -881,7 +881,7 @@ font:
   - id: small_font
     file: "fonts/Futura Bold/Futura Bold.otf"
     size: 16
-    glyphs: "().:°'-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz"
+    glyphs: "().:°'-/0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz"
 
   - id: date_font
     file: "fonts/Futura Bold/Futura Bold.otf"
@@ -902,7 +902,7 @@ font:
       - "$mdiWifiOff"
       - "$mdiBellRingOutline"
       - "$mdiBatteryCharging100"
-      - "$mdiBattery90"
+      - "$mdiBattery"
       - "$mdiBattery70"
       - "$mdiBattery30"
       - "$mdiBattery10"
@@ -910,18 +910,19 @@ font:
       - "$mdiAccountBox"
       - "$mdiWebBox"
       - "$mdiRssBox"
+      - "$mdiTimerOutline"
+      - "$mdiHomeAssistant"
 
   - id: mdi
     file: fonts/mdi/fonts/materialdesignicons-webfont.woff
     size: 36
     glyphs:
-      # Main:
-      - "$mdiTimerOutline"
-      - "$mdiHomeAssistant"
       # Weather:
+      - "$mdiAlert"
       - "$mdiWeatherCloudy"
       - "$mdiWeatherCloudyAlert"
       - "$mdiWeatherCloudyArrowRight"
+      - "$mdiWeatherDust"
       - "$mdiWeatherFog"
       - "$mdiWeatherHail"
       - "$mdiWeatherHazy"
@@ -949,14 +950,12 @@ font:
       - "$mdiWeatherTornado"
       - "$mdiWeatherWindy"
       - "$mdiWeatherWindyVariant"
-      - "$mdiAlert"
       # City:
       - "$mdiCity"
       - "$mdiCityVariant"
       - "$mdiOfficeBuilding"
       - "$mdiCastle"
       - "$mdiGoogleDownasaur"
-      - "$mdiHospitalBuilding"
       - "$mdiPineTree"
       # Sky:
       - "$mdiStarOutline"
@@ -969,7 +968,34 @@ font:
       - "$mdiSpaceStation"
       - "$mdiUfoOutline"
       - "$mdiSatelliteVariant"
+      # Dates:
+      - "$mdiBee"
+      - "$mdiBicycle"            
+      - "$mdiCakeVariantOutline"
+      - "$mdiClover"      
+      - "$mdiCodeBraces"
+      - "$mdiDeathStarVariant"
+      - "$mdiDebugStepOver"
+      - "$mdiDonkey"
+      - "$mdiEarth"
+      - "$mdiElephant"
+      - "$mdiEmoticonHappyOutline"
+      - "$mdiFerry"
+      - "$mdiForest"            
+      - "$mdiHalloween"
+      - "$mdiHeart"
+      - "$mdiHospitalBuilding"
+      - "$mdiHumanMaleBoard"
+      - "$mdiHumanMaleChild"
+      - "$mdiLinkBoxVariant"
       - "$mdiPartyPopper"
+      - "$mdiPeace"
+      - "$mdiPlusThick"
+      - "$mdiRocketLaunch"
+      - "$mdiSchool"
+      - "$mdiTeddyBear"
+      - "$mdiVote"
+      - "$mdiWater"
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -1013,16 +1039,6 @@ sun:
   id: sol
   latitude: $LATITUDE
   longitude: $LONGITUDE
-
-text_sensor:
-  - platform: sun
-    id: sunrise
-    type: sunrise
-    format: "%H:%M"
-  - platform: sun
-    id: sunset
-    type: sunset
-    format: "%H:%M"
 
 ota:
   password: $OTA_PASSWORD
