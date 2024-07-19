@@ -6,7 +6,7 @@ substitutions:
   <<: !include secrets.yaml
   #### PARAMS ####
   ID: "1"
-  NAME: watchy$ID  
+  NAME: watchy$ID
   VERSION: "3"
   <<: !include pins_v3.yaml
   #### FACES AND MODES ####
@@ -94,8 +94,46 @@ display:
     lambda: |-
       auto w = it.get_width();
       auto h = it.get_height();
+
       const auto now = id(ntp).now();
       const auto utcnow = id(ntp).utcnow();
+
+      const int m = now.month;
+      const int d = now.day_of_month;
+      const int md = m * 100 + d;
+      const int FRIDAY = 6;
+
+      const char *wifiIcon = id(wifi_id).is_disabled() ?
+        (id(keep_awake) ? mdiEmoticonHappyOutline : "") :
+        (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff);
+
+      const char *batteryIcon = id(is_charging).state ? mdiBatteryCharging100 : (
+        !id(battery).has_state() ? mdiBatteryUnknown : (
+          id(battery).state > $BATTERY_FULL ? mdiBattery : (
+            id(battery).state > $BATTERY_HIGH ? mdiBattery70 : (
+              id(battery).state > $BATTERY_LOW ? mdiBattery30 :
+                mdiBattery10
+            )
+          )
+        )
+      );
+
+      const char *chimeIcon = id(chime) ? mdiBellRingOutline : "";
+
+      const char *calendarIcon = "";
+      if (
+        m == $BIRTHMONTH && d == $BIRTHDAY ||
+        m == $BIRTHMONTH1 && d == $BIRTHDAY1 ||
+        m == $BIRTHMONTH2 && d == $BIRTHDAY2
+      ) {
+        calendarIcon = mdiCakeVariantOutline;
+      } else if (calendarIcons.find(md) != calendarIcons.end()) {
+        calendarIcon = calendarIcons[md];
+      } else if (now.day_of_year == 256) {
+        calendarIcon = mdiCodeBraces;
+      } else if (now.day_of_week == FRIDAY && d == 13) {
+        calendarIcon = mdiClover;
+      }
 
       if (id(mode) == $MODE_FACES) {
         if (id(face) == 0) {
@@ -108,34 +146,15 @@ display:
           it.print(w/2, h/2-5, id(time_font), TextAlign::CENTER, ":");
           it.printf(w/2-10, h/2, id(time_font), TextAlign::CENTER_RIGHT, "%d", now.hour);
           it.printf(w/2+10, h/2, id(time_font), TextAlign::CENTER_LEFT, "%02d", now.minute);
-
-          const int m = now.month;
-          const int d = now.day_of_month;
-          const int md = m * 100 + d;
-          const int FRIDAY = 6;
-          const char *icon = "";
-          if (
-            m == $BIRTHMONTH && d == $BIRTHDAY ||
-            m == $BIRTHMONTH1 && d == $BIRTHDAY1 ||
-            m == $BIRTHMONTH2 && d == $BIRTHDAY2
-          ) {
-            icon = mdiCakeVariantOutline;
-          } else if (calendarIcons.find(md) != calendarIcons.end()) {
-            icon = calendarIcons[md];
-          } else if (now.day_of_year == 256) {
-            icon = mdiCodeBraces;
-          } else if (now.day_of_week == FRIDAY && d == 13) {
-            icon = mdiClover;
-          }
-
           if (now.hour <= 9) {
-            it.printf(0, h/2, id(mdi), TextAlign::CENTER_LEFT, "%s", icon);
+            it.printf(0, h/2, id(mdi), TextAlign::CENTER_LEFT, "%s", calendarIcon);
           }
 
           // Weather //
           if (id(weather_temp_max) != -1000.0 && id(weather_age_hours) <= 12) {
             it.printf(0, h, id(date_font), TextAlign::BOTTOM_LEFT, "%.0f°", id(weather_temp_max));
           }
+
           if (id(weather_code_0) != 0) {
             it.printf(w, h, id(mdi), TextAlign::BOTTOM_RIGHT, "%s%s%s%s",
               id(weather_age_hours) <= 3 ? weatherIcons[id(weather_code_0)] : "",
@@ -146,21 +165,7 @@ display:
           }
 
           // Status Icons //
-          it.printf(w/2, h/2+46, id(mdi_small), TextAlign::CENTER,
-            "%s%s%s",
-            id(chime) ? mdiBellRingOutline : "",
-            id(wifi_id).is_disabled() ? (id(keep_awake) ? mdiEmoticonHappyOutline : "") : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff),
-            id(is_charging).state ? mdiBatteryCharging100 : (
-              !id(battery).has_state() ? mdiBatteryUnknown : (
-                id(battery).state > $BATTERY_FULL ? mdiBattery : (
-                  id(battery).state > $BATTERY_HIGH ? mdiBattery70 : (
-                    id(battery).state > $BATTERY_LOW ? mdiBattery30 :
-                      mdiBattery10
-                  )
-                )
-              )
-            )
-          );
+          it.printf(w/2, h/2+46, id(mdi_small), TextAlign::CENTER, "%s%s%s", chimeIcon, wifiIcon, batteryIcon);
 
           // Active Timer //
           if (id(timers)[id(active_timer)] != 0) {
@@ -173,6 +178,7 @@ display:
               );
             }
           }
+
         } else if (id(face) == 1 || id(face) == 2) {
           ////////// Hands Face //////////
           const bool n = id(face) == 1;
@@ -235,26 +241,9 @@ display:
           }
 
           // Status Icons //
-          it.printf(w*1/4, h/2, id(mdi_small), TextAlign::CENTER,
-            "%s%s",
-            id(chime) ? mdiBellRingOutline : "",
-            id(wifi_id).is_disabled() ? (id(keep_awake) ? mdiEmoticonHappyOutline : "") : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff)
-          );
-
-          // Battery Icon //
-          it.printf(w*3/4, h/2, id(mdi_small), TextAlign::CENTER,
-            "%s",
-            id(is_charging).state ? mdiBatteryCharging100 : (
-              !id(battery).has_state() ? mdiBatteryUnknown : (
-                id(battery).state > $BATTERY_FULL ? mdiBattery : (
-                  id(battery).state > $BATTERY_HIGH ? mdiBattery70 : (
-                    id(battery).state > $BATTERY_LOW ? mdiBattery30 :
-                      mdiBattery10
-                  )
-                )
-              )
-            )
-          );
+          it.printf(w*1/4, h/2, id(mdi_small), TextAlign::CENTER, "%s%s", chimeIcon, wifiIcon);
+          it.printf(w*3/4, h/2, id(mdi_small), TextAlign::CENTER, "%s", batteryIcon);
+          
         } else if (id(face) == 3) {
           ////////// System Info Face //////////
 
@@ -284,7 +273,7 @@ display:
           l += lh;
 
           it.printf(0, l, f, TextAlign::TOP_LEFT,
-            "Wifi: %s (%d)", 
+            "Wifi: %s (%d)",
             (id(wifi_id).is_disabled() ? "off" : (id(wifi_id).is_connected() ? id(wifi_id).wifi_ssid().c_str() : "n/a")),
             (id(wifi_id).is_connected() ? id(wifi_id).wifi_rssi() : 0)
           );
@@ -300,6 +289,7 @@ display:
             it.printf(x, h+6, id(mdi), TextAlign::BOTTOM_LEFT, "%s", city[random(cityLen)]);
           }
         }
+        
       } else if (id(mode) == $MODE_TIMERS) {
         it.printf(0, 0, id(mdi_small), TextAlign::TOP_LEFT, mdiTimerOutline);
 
@@ -319,7 +309,6 @@ display:
             it.printf(0, l, id(small_font), TextAlign::CENTER_LEFT, "%c", abcde[x]);
 
             // Main timer:
-
             const int timer = utcnow.timestamp - id(timers)[x];
             const int timer_hrs = timer / (60*60);
             const int timer_min = (timer / 60) % 60;
@@ -345,21 +334,15 @@ display:
                 );
               }
             }
-            
+
             l += lh;
           }
         }
 
         // Wifi status //
-        it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
-          "%s",
-          id(wifi_id).is_disabled() ? (id(keep_awake) ? mdiEmoticonHappyOutline : "") : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff)
-        );            
-      } else if (id(mode) == $MODE_HA) {
-        const auto w = it.get_width();
-        const auto h = it.get_height();
-        const auto now = id(ntp).now();
+        it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT, "%s", wifiIcon);
 
+      } else if (id(mode) == $MODE_HA) {
         it.print(0, 0, id(mdi_small), TextAlign::TOP_LEFT, mdiHomeAssistant);
 
         int l = 0;
@@ -373,29 +356,23 @@ display:
         l += lh;
 
         // Wifi status //
-        it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
-          "%s",
-          id(wifi_id).is_disabled() ? "" : id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff
-        );            
-        } else if (id(mode) >= 1000) {
-          id(mode) = id(mode) - 1000;
+        it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT, "%s", wifiIcon);
+
+      } else if (id(mode) >= 1000) {
+        id(mode) = id(mode) - 1000;
         it.print(w/2, h/2, id(date_font), TextAlign::BOTTOM_CENTER, "DON'T");
         it.print(w/2, h/2, id(date_font), TextAlign::TOP_CENTER, "PANIC");
 
       } else if (id(mode) == $MODE_QR) {
-        const auto w = it.get_width();
-        const auto h = it.get_height();
-        const auto now = id(ntp).now();
-
         auto qr = id(qr_vcard);
-        const char *icon = mdiAccountBox;
+        const char *qrModeIcon = mdiAccountBox;
 
         if (id(qr_mode) == 1) {
           qr = id(qr_website);
-          icon = mdiWebBox;
+          qrModeIcon = mdiWebBox;
         } else if (id(qr_mode) == 2) {
           qr = id(qr_rss);
-          icon = mdiRssBox;
+          qrModeIcon = mdiRssBox;
         }
 
         const int offset = 18;
@@ -403,14 +380,11 @@ display:
         const int scale = int(float(w - offset) / float(size));
         const auto x = (w / 2) - ((size * scale) / 2);
         const auto y = ((h - offset) / 2) - ((size * scale) / 2) + offset;
-        
-        it.print(0, 0, id(mdi_small), TextAlign::TOP_LEFT, icon);
+
+        it.print(0, 0, id(mdi_small), TextAlign::TOP_LEFT, qrModeIcon);
         it.printf(w/2, -2, id(small_font), TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
-        it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
-          "%s",
-          id(wifi_id).is_disabled() ? (id(keep_awake) ? mdiEmoticonHappyOutline : "") : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff)
-        );
-        it.qr_code(x, y, qr, Color(255,255,255), scale);             
+        it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT, "%s", wifiIcon);
+        it.qr_code(x, y, qr, Color(255,255,255), scale);
       }
 
 binary_sensor:
@@ -479,7 +453,7 @@ binary_sensor:
       delayed_on: 1s
     on_press:
       - lambda: |-
-          id(counter) = 0;      
+          id(counter) = 0;
           id(mode) = $MODE_TIMERS;
           id(timers)[id(active_timer)] = 0;
           if (id(active_timer) != 0) {
@@ -556,7 +530,7 @@ binary_sensor:
     on_click:
       min_length: 0ms
       max_length: 1s
-      then:    
+      then:
         - lambda: |-
             id(counter) = 0;
             if (id(mode) == $MODE_QR) {
@@ -578,7 +552,7 @@ binary_sensor:
       - lambda: |-
           id(counter) = 0;
           id(mode) = $MODE_QR;
-      - component.update: glass        
+      - component.update: glass
 
   ## Charging ##
 
@@ -672,7 +646,7 @@ script:
       deep_sleep.enter:
         sleep_duration: !lambda |-
           const auto now = id(ntp).now();
-          
+
           if (id(battery).state < $BATTERY_LOW) {
             // Sleep up to 10 min:
             ESP_LOGE("watchy", "Sleep 10min");
@@ -772,7 +746,7 @@ globals:
   - id: face
     type: int
     restore_value: yes
-    initial_value: "0"  
+    initial_value: "0"
   - id: mode
     type: int
     restore_value: yes
@@ -913,9 +887,9 @@ font:
       - "$mdiSatelliteVariant"
       # Dates:
       - "$mdiBee"
-      - "$mdiBicycle"            
+      - "$mdiBicycle"
       - "$mdiCakeVariantOutline"
-      - "$mdiClover"      
+      - "$mdiClover"
       - "$mdiCodeBraces"
       - "$mdiDeathStarVariant"
       - "$mdiDebugStepOver"
@@ -924,7 +898,7 @@ font:
       - "$mdiElephant"
       - "$mdiEmoticonHappyOutline"
       - "$mdiFerry"
-      - "$mdiForest"            
+      - "$mdiForest"
       - "$mdiHalloween"
       - "$mdiHeart"
       - "$mdiHospitalBuilding"
