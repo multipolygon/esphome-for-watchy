@@ -56,7 +56,7 @@ esphome:
           } else if (!id(keep_awake) && id(mode) == $MODE_FACES) {
             if (random(1000) == 0) {
               id(chime) = true;
-              id(face) = id(face) + 1000;
+              id(mode) = id(mode) + 1000;
             }
           }
 
@@ -65,10 +65,10 @@ esphome:
             lambda: return id(keep_awake) || id(chime);
           then:
             - switch.turn_on: buzzer
-            - script.execute: update_glass
+            - component.update: glass
             - switch.turn_off: buzzer
           else:
-            - script.execute: update_glass
+            - component.update: glass
       - script.execute: go_to_sleep
 
 display:
@@ -91,12 +91,15 @@ display:
     full_update_every: 1000
     # Duration for the display reset operation. Defaults to 200ms. Setting this value to 2ms may resolve issues with newer e-Paper Driver modules (e.g. Rev 2.1).
     reset_duration: 2ms # ?????
-    pages:
-      - id: digital_clock_page
-        lambda: |-
-          auto w = it.get_width();
-          auto h = it.get_height();
-          const auto now = id(ntp).now();
+    lambda: |-
+      auto w = it.get_width();
+      auto h = it.get_height();
+      const auto now = id(ntp).now();
+      const auto utcnow = id(ntp).utcnow();
+
+      if (id(mode) == $MODE_FACES) {
+        if (id(face) == 0) {
+          ////////// Digital Face //////////
 
           // Date //
           it.strftime(w/2, 0, id(date_font), TextAlign::TOP_CENTER, "%a %d %b", now);
@@ -170,13 +173,8 @@ display:
               );
             }
           }
-
-      - &clockface
-        id: circular_12hour_clock_page
-        lambda: |-
-          auto w = it.get_width();
-          auto h = it.get_height();
-          const auto now = id(ntp).now();
+        } else if (id(face) == 1 || id(face) == 2) {
+          ////////// Hands Face //////////
           const bool n = id(face) == 1;
 
           // Center Dot //
@@ -257,101 +255,8 @@ display:
               )
             )
           );
-
-      - <<: *clockface
-        id: circular_roman_clock_page
-
-      - id: timers_page
-        lambda: |-
-          const auto w = it.get_width();
-          const auto h = it.get_height();
-          const auto now = id(ntp).now();
-          const auto utcnow = id(ntp).utcnow();
-
-          it.printf(0, 0, id(mdi_small), TextAlign::TOP_LEFT, mdiTimerOutline);
-
-          int l = 0;
-          const int lh = 32;
-          const auto f = id(date_font);
-
-          it.printf(w/2, l, f, TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
-          l += lh * 1.8;
-
-          const char *abcde = "ABCDE";
-
-          for (int i=id(active_timer)+1; i<id(active_timer)+6; ++i) {
-            int x = i % 5;
-            if (id(timers)[x] != 0) {
-              // Timer label:
-              it.printf(0, l, id(small_font), TextAlign::CENTER_LEFT, "%c", abcde[x]);
-
-              // Main timer:
-
-              const int timer = utcnow.timestamp - id(timers)[x];
-              const int timer_hrs = timer / (60*60);
-              const int timer_min = (timer / 60) % 60;
-              if (timer_hrs < 100) {
-                it.printf(w/2+8, l, f, TextAlign::CENTER_RIGHT,
-                  "%2d:%02d",
-                  timer_hrs,
-                  timer_min
-                );
-              }
-
-              // Split timer:
-              int y = (x + 1) % 5; // Previous timer index
-              if (id(timers)[y] != 0 && id(timers)[y] >= id(timers)[x]) {
-                const int split = id(timers)[y] - id(timers)[x];
-                const int split_hrs = split / (60*60);
-                const int split_min = (split / 60) % 60;
-                if (split_hrs < 100) {
-                  it.printf(w, l, f, TextAlign::CENTER_RIGHT,
-                    "%2d:%02d",
-                    split_hrs,
-                    split_min
-                  );
-                }
-              }
-              
-              l += lh;
-            }
-          }
-
-          // Wifi status //
-          it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
-            "%s",
-            id(wifi_id).is_disabled() ? (id(keep_awake) ? mdiEmoticonHappyOutline : "") : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff)
-          );
-
-      - id: ha_page
-        lambda: |-
-          const auto w = it.get_width();
-          const auto h = it.get_height();
-          const auto now = id(ntp).now();
-
-          it.print(0, 0, id(mdi_small), TextAlign::TOP_LEFT, mdiHomeAssistant);
-
-          int l = 0;
-          const int lh = 34;
-          const int lo = 38;
-
-          it.printf(w/2, l, id(date_font), TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
-          l += lh * 1.5;
-
-          it.print(0, l, id(small_font), TextAlign::CENTER_LEFT, "Add your code here.");
-          l += lh;
-
-          // Wifi status //
-          it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
-            "%s",
-            id(wifi_id).is_disabled() ? "" : id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff
-          );
-
-      - id: system_info_page
-        lambda: |-
-          const auto w = it.get_width();
-          const auto h = it.get_height();
-          const auto now = id(ntp).now();
+        } else if (id(face) == 3) {
+          ////////// System Info Face //////////
 
           if (id(weather_code_0) != 0) {
             it.printf(w/2, 0, id(mdi), TextAlign::TOP_CENTER, "%s%s%s%s%s",
@@ -380,7 +285,7 @@ display:
 
           it.printf(0, l, f, TextAlign::TOP_LEFT,
             "Wifi: %s (%d)", 
-            (id(wifi_id).is_disabled() ? "off" : (id(wifi_id).is_connected() ? id(wifi_id).wifi_ssid() : "n/a")),
+            (id(wifi_id).is_disabled() ? "off" : (id(wifi_id).is_connected() ? id(wifi_id).wifi_ssid().c_str() : "n/a")),
             (id(wifi_id).is_connected() ? id(wifi_id).wifi_rssi() : 0)
           );
           l += lh;
@@ -394,44 +299,119 @@ display:
           for (int x=-1*random(10); x<=w+20; x+=24) {
             it.printf(x, h+6, id(mdi), TextAlign::BOTTOM_LEFT, "%s", city[random(cityLen)]);
           }
+        }
+      } else if (id(mode) == $MODE_TIMERS) {
+        it.printf(0, 0, id(mdi_small), TextAlign::TOP_LEFT, mdiTimerOutline);
 
-      - id: dp_page
-        lambda: |-
-          const auto w = it.get_width();
-          const auto h = it.get_height();     
-          it.print(w/2, h/2, id(date_font), TextAlign::BOTTOM_CENTER, "DON'T");
-          it.print(w/2, h/2, id(date_font), TextAlign::TOP_CENTER, "PANIC");
+        int l = 0;
+        const int lh = 32;
+        const auto f = id(date_font);
 
-      - id: qr_page
-        lambda: |-
-          const auto w = it.get_width();
-          const auto h = it.get_height();
-          const auto now = id(ntp).now();
+        it.printf(w/2, l, f, TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
+        l += lh * 1.8;
 
-          auto qr = id(qr_vcard);
-          const char *icon = mdiAccountBox;
+        const char *abcde = "ABCDE";
 
-          if (id(qr_mode) == 1) {
-            qr = id(qr_website);
-            icon = mdiWebBox;
-          } else if (id(qr_mode) == 2) {
-            qr = id(qr_rss);
-            icon = mdiRssBox;
+        for (int i=id(active_timer)+1; i<id(active_timer)+6; ++i) {
+          int x = i % 5;
+          if (id(timers)[x] != 0) {
+            // Timer label:
+            it.printf(0, l, id(small_font), TextAlign::CENTER_LEFT, "%c", abcde[x]);
+
+            // Main timer:
+
+            const int timer = utcnow.timestamp - id(timers)[x];
+            const int timer_hrs = timer / (60*60);
+            const int timer_min = (timer / 60) % 60;
+            if (timer_hrs < 100) {
+              it.printf(w/2+8, l, f, TextAlign::CENTER_RIGHT,
+                "%2d:%02d",
+                timer_hrs,
+                timer_min
+              );
+            }
+
+            // Split timer:
+            int y = (x + 1) % 5; // Previous timer index
+            if (id(timers)[y] != 0 && id(timers)[y] >= id(timers)[x]) {
+              const int split = id(timers)[y] - id(timers)[x];
+              const int split_hrs = split / (60*60);
+              const int split_min = (split / 60) % 60;
+              if (split_hrs < 100) {
+                it.printf(w, l, f, TextAlign::CENTER_RIGHT,
+                  "%2d:%02d",
+                  split_hrs,
+                  split_min
+                );
+              }
+            }
+            
+            l += lh;
           }
+        }
 
-          const int offset = 18;
-          const auto size = qr->get_size();
-          const int scale = int(float(w - offset) / float(size));
-          const auto x = (w / 2) - ((size * scale) / 2);
-          const auto y = ((h - offset) / 2) - ((size * scale) / 2) + offset;
-          
-          it.print(0, 0, id(mdi_small), TextAlign::TOP_LEFT, icon);
-          it.printf(w/2, -2, id(small_font), TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
-          it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
-            "%s",
-            id(wifi_id).is_disabled() ? (id(keep_awake) ? mdiEmoticonHappyOutline : "") : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff)
-          );
-          it.qr_code(x, y, qr, Color(255,255,255), scale);          
+        // Wifi status //
+        it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
+          "%s",
+          id(wifi_id).is_disabled() ? (id(keep_awake) ? mdiEmoticonHappyOutline : "") : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff)
+        );            
+      } else if (id(mode) == $MODE_HA) {
+        const auto w = it.get_width();
+        const auto h = it.get_height();
+        const auto now = id(ntp).now();
+
+        it.print(0, 0, id(mdi_small), TextAlign::TOP_LEFT, mdiHomeAssistant);
+
+        int l = 0;
+        const int lh = 34;
+        const int lo = 38;
+
+        it.printf(w/2, l, id(date_font), TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
+        l += lh * 1.5;
+
+        it.print(0, l, id(small_font), TextAlign::CENTER_LEFT, "Add your code here.");
+        l += lh;
+
+        // Wifi status //
+        it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
+          "%s",
+          id(wifi_id).is_disabled() ? "" : id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff
+        );            
+        } else if (id(mode) >= 1000) {
+          id(mode) = id(mode) - 1000;
+        it.print(w/2, h/2, id(date_font), TextAlign::BOTTOM_CENTER, "DON'T");
+        it.print(w/2, h/2, id(date_font), TextAlign::TOP_CENTER, "PANIC");
+
+      } else if (id(mode) == $MODE_QR) {
+        const auto w = it.get_width();
+        const auto h = it.get_height();
+        const auto now = id(ntp).now();
+
+        auto qr = id(qr_vcard);
+        const char *icon = mdiAccountBox;
+
+        if (id(qr_mode) == 1) {
+          qr = id(qr_website);
+          icon = mdiWebBox;
+        } else if (id(qr_mode) == 2) {
+          qr = id(qr_rss);
+          icon = mdiRssBox;
+        }
+
+        const int offset = 18;
+        const auto size = qr->get_size();
+        const int scale = int(float(w - offset) / float(size));
+        const auto x = (w / 2) - ((size * scale) / 2);
+        const auto y = ((h - offset) / 2) - ((size * scale) / 2) + offset;
+        
+        it.print(0, 0, id(mdi_small), TextAlign::TOP_LEFT, icon);
+        it.printf(w/2, -2, id(small_font), TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
+        it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT,
+          "%s",
+          id(wifi_id).is_disabled() ? (id(keep_awake) ? mdiEmoticonHappyOutline : "") : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff)
+        );
+        it.qr_code(x, y, qr, Color(255,255,255), scale);             
+      }
 
 binary_sensor:
   # https://esphome.io/components/binary_sensor
@@ -487,7 +467,7 @@ binary_sensor:
             id(mode) = $MODE_TIMERS;
             id(active_timer) = (id(active_timer) + 1) % 5;
             id(timers)[id(active_timer)] = id(ntp).utcnow().timestamp;
-        - script.execute: update_glass
+        - component.update: glass
 
   - id: cancel_active_timer_button
     pin:
@@ -505,7 +485,7 @@ binary_sensor:
           if (id(active_timer) != 0) {
             id(active_timer) -= 1;
           }
-      - script.execute: update_glass
+      - component.update: glass
 
   - id: clear_all_timers_button
     pin:
@@ -525,7 +505,7 @@ binary_sensor:
           id(timers)[2] = 0;
           id(timers)[3] = 0;
           id(timers)[4] = 0;
-      - script.execute: update_glass
+      - component.update: glass
 
   ## Right Top ##
 
@@ -546,7 +526,7 @@ binary_sensor:
             } else {
               id(mode) = $MODE_FACES;
             }
-        - script.execute: update_glass
+        - component.update: glass
 
   - id: epaper_display_clean_refresh_button
     pin:
@@ -562,7 +542,6 @@ binary_sensor:
           // ePaper full wipe clean:
           id(glass).set_full_update_every(1);
           id(glass).update();
-          delay(100);
           id(glass).set_full_update_every(1000);
           id(glass).update();
 
@@ -585,7 +564,7 @@ binary_sensor:
             } else {
               id(mode) = $MODE_HA;
             }
-        - script.execute: update_glass
+        - component.update: glass
 
   - id: qr_codes_mode_button
     pin:
@@ -599,7 +578,7 @@ binary_sensor:
       - lambda: |-
           id(counter) = 0;
           id(mode) = $MODE_QR;
-      - script.execute: update_glass        
+      - component.update: glass        
 
   ## Charging ##
 
@@ -631,38 +610,6 @@ wifi:
           script.execute: update_weather
 
 script:
-  - id: update_glass
-    then:
-      - display.page.show: !lambda |-
-          if (id(mode) == $MODE_FACES) {
-            if (id(face) >= 1000) {
-              id(face) = id(face) - 1000;
-              return id(dp_page);
-            } else if (id(face) == 0) {
-              return id(digital_clock_page);
-            } else if (id(face) == 1) {
-              return id(circular_12hour_clock_page);
-            } else if (id(face) == 2) {
-              return id(circular_roman_clock_page);
-            } else if (id(face) == 3) {
-              return id(system_info_page);
-            } else {
-              ESP_LOGE("watchy", "Invalid page id!");
-              return id(digital_clock_page);
-            }
-          } else if (id(mode) == $MODE_TIMERS) {
-            return id(timers_page);
-          } else if (id(mode) == $MODE_HA) {
-            return id(ha_page);
-          } else if (id(mode) == $MODE_QR) {
-            return id(qr_page);
-          } else {
-            ESP_LOGE("watchy", "Invalid mode id!");
-            return id(digital_clock_page);
-          }
-      - component.update: glass
-      - lambda: "id(glass).set_full_update_every(1000);" # prevent epaper full wipe clean
-
   - id: update_weather
     mode: single
     then:
@@ -699,13 +646,12 @@ script:
                     return true;
                   });
 
+                  id(updating_weather) = false;
+
                   if (!id(updating_time)) {
                     id(glass).set_full_update_every(1);
                   }
-
-                  id(updating_weather) = false;
-              - delay: 5ms
-              - component.update: glass
+                  id(glass).update();
               - script.execute: go_to_sleep
 
   - id: go_to_sleep
@@ -717,7 +663,8 @@ script:
         then:
           deep_sleep.enter:
         else:
-          lambda: "id(glass).set_full_update_every(1000);" # reset epaper full wipe clean
+          lambda: |-
+            id(glass).set_full_update_every(1000); // reset epaper full wipe clean
 
   - id: deep_sleep_enter
     mode: restart
@@ -755,15 +702,11 @@ time:
         then:
           # - pcf8563.write_time:
           - lambda: |-
+              id(updating_time) = false;
               if (id(updating_time) && !id(updating_weather)) {
                 id(glass).set_full_update_every(1);
               }
-              id(updating_time) = false;
-          # Two updates are required, first to refresh the time????
-          # - component.update: glass
-          # - lambda: "id(glass).set_full_update_every(1);" # epaper full wipe clean
-          # Then another to trigger the full wipe:
-          - component.update: glass
+              id(glass).update();
           - script.execute: go_to_sleep
     on_time:
       - seconds: 0
