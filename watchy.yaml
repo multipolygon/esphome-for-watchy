@@ -135,10 +135,10 @@ display:
           }
           if (id(weather_code_0) != 0) {
             it.printf(w, h, id(mdi), TextAlign::BOTTOM_RIGHT, "%s%s%s%s",
-              id(weather_age_hours) <= 3 ? weather_icon_map[id(weather_code_0)] : "",
-              id(weather_age_hours) <= 6 ? weather_icon_map[id(weather_code_1)] : "",
-              id(weather_age_hours) <= 9 ? weather_icon_map[id(weather_code_2)] : "",
-              id(weather_age_hours) <= 12 ? weather_icon_map[id(weather_code_3)] : ""
+              id(weather_age_hours) <= 3 ? weatherIcons[id(weather_code_0)] : "",
+              id(weather_age_hours) <= 6 ? weatherIcons[id(weather_code_1)] : "",
+              id(weather_age_hours) <= 9 ? weatherIcons[id(weather_code_2)] : "",
+              id(weather_age_hours) <= 12 ? weatherIcons[id(weather_code_3)] : ""
             );
           }
 
@@ -224,16 +224,16 @@ display:
 
           // Weather Icons //
           if (id(weather_age_hours) <= 3) {
-            it.printf(w, 0, id(mdi), TextAlign::TOP_RIGHT, "%s", weather_icon_map[rotateWeatherCode(0, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))]);
+            it.printf(w, 0, id(mdi), TextAlign::TOP_RIGHT, "%s", weatherIcons[rotateWeatherCode(0, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))]);
           }
           if (id(weather_age_hours) <= 6) {
-            it.printf(w, h, id(mdi), TextAlign::BOTTOM_RIGHT, "%s", weather_icon_map[rotateWeatherCode(1, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))]);
+            it.printf(w, h, id(mdi), TextAlign::BOTTOM_RIGHT, "%s", weatherIcons[rotateWeatherCode(1, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))]);
           }
           if (id(weather_age_hours) <= 9) {
-            it.printf(0, h, id(mdi), TextAlign::BOTTOM_LEFT, "%s", weather_icon_map[rotateWeatherCode(2, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))]);
+            it.printf(0, h, id(mdi), TextAlign::BOTTOM_LEFT, "%s", weatherIcons[rotateWeatherCode(2, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))]);
           }
           if (id(weather_age_hours) <= 12) {
-            it.printf(0, 0, id(mdi), TextAlign::TOP_LEFT, "%s", weather_icon_map[rotateWeatherCode(3, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))]);
+            it.printf(0, 0, id(mdi), TextAlign::TOP_LEFT, "%s", weatherIcons[rotateWeatherCode(3, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))]);
           }
 
           // Status Icons //
@@ -355,11 +355,11 @@ display:
 
           if (id(weather_code_0) != 0) {
             it.printf(w/2, 0, id(mdi), TextAlign::TOP_CENTER, "%s%s%s%s%s",
-              weather_icon_map[id(weather_code_0)],
-              weather_icon_map[id(weather_code_1)],
+              weatherIcons[id(weather_code_0)],
+              weatherIcons[id(weather_code_1)],
               sky[random(skyLen)],
-              weather_icon_map[id(weather_code_2)],
-              weather_icon_map[id(weather_code_3)]
+              weatherIcons[id(weather_code_2)],
+              weatherIcons[id(weather_code_3)]
             );
           }
 

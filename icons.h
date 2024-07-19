@@ -3,7 +3,7 @@
 
 // https://openweathermap.org/weather-conditions#Weather-Condition-Codes-2
 
-std::map<int, const char *> weather_icon_map{
+std::map<int, const char *> weatherIcons{
     {0, mdiAlert},                       // Exception
                                          //// STORM ////
     {200, mdiWeatherLightningRainy},     // thunderstorm with light rain

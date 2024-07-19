@@ -4,7 +4,7 @@
 esphome:
   name: $NAME
   includes:
-    - weather.h
+    - icons.h
   on_boot:
     priority: 700
     then:
@@ -98,10 +98,10 @@ display:
           }
           if (id(weather_code_0) != 0) {
             it.printf(w, h, id(weather_icon_font), TextAlign::BOTTOM_RIGHT, "%s%s%s%s",
-              id(weather_age_hours) <= 3 ? weather_icon_map[id(weather_code_0)].c_str() : "",
-              id(weather_age_hours) <= 6 ? weather_icon_map[id(weather_code_1)].c_str() : "",
-              id(weather_age_hours) <= 9 ? weather_icon_map[id(weather_code_2)].c_str() : "",
-              id(weather_age_hours) <= 12 ? weather_icon_map[id(weather_code_3)].c_str() : ""
+              id(weather_age_hours) <= 3 ? weatherIcons[id(weather_code_0)].c_str() : "",
+              id(weather_age_hours) <= 6 ? weatherIcons[id(weather_code_1)].c_str() : "",
+              id(weather_age_hours) <= 9 ? weatherIcons[id(weather_code_2)].c_str() : "",
+              id(weather_age_hours) <= 12 ? weatherIcons[id(weather_code_3)].c_str() : ""
             );
           }
 
@@ -176,16 +176,16 @@ display:
 
           // Weather Icons //
           if (id(weather_age_hours) <= 3) {
-            it.printf(w, 0, id(weather_icon_font), TextAlign::TOP_RIGHT, "%s", weather_icon_map[rotateWeatherCode(0, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+            it.printf(w, 0, id(weather_icon_font), TextAlign::TOP_RIGHT, "%s", weatherIcons[rotateWeatherCode(0, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
           }
           if (id(weather_age_hours) <= 6) {
-            it.printf(w, h, id(weather_icon_font), TextAlign::BOTTOM_RIGHT, "%s", weather_icon_map[rotateWeatherCode(1, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+            it.printf(w, h, id(weather_icon_font), TextAlign::BOTTOM_RIGHT, "%s", weatherIcons[rotateWeatherCode(1, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
           }
           if (id(weather_age_hours) <= 9) {
-            it.printf(0, h, id(weather_icon_font), TextAlign::BOTTOM_LEFT, "%s", weather_icon_map[rotateWeatherCode(2, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+            it.printf(0, h, id(weather_icon_font), TextAlign::BOTTOM_LEFT, "%s", weatherIcons[rotateWeatherCode(2, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
           }
           if (id(weather_age_hours) <= 12) {
-            it.printf(0, 0, id(weather_icon_font), TextAlign::TOP_LEFT, "%s", weather_icon_map[rotateWeatherCode(3, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
+            it.printf(0, 0, id(weather_icon_font), TextAlign::TOP_LEFT, "%s", weatherIcons[rotateWeatherCode(3, now.hour, id(weather_code_0), id(weather_code_1), id(weather_code_2), id(weather_code_3))].c_str());
           }
 
           // Wifi status //
@@ -292,11 +292,11 @@ display:
 
           if (id(weather_code_0) != 0) {
             it.printf(w/2, 0, id(weather_icon_font), TextAlign::TOP_CENTER, "%s%s%s%s%s",
-              weather_icon_map[id(weather_code_0)].c_str(),
-              weather_icon_map[id(weather_code_1)].c_str(),
+              weatherIcons[id(weather_code_0)].c_str(),
+              weatherIcons[id(weather_code_1)].c_str(),
               sky[random(skyLen)],
-              weather_icon_map[id(weather_code_2)].c_str(),
-              weather_icon_map[id(weather_code_3)].c_str()
+              weatherIcons[id(weather_code_2)].c_str(),
+              weatherIcons[id(weather_code_3)].c_str()
             );
           }
 
