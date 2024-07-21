@@ -1,5 +1,5 @@
 #include <map>
-#include "mdi.h"
+// #include "mdi.h"
 
 // https://openweathermap.org/weather-conditions#Weather-Condition-Codes-2
 
