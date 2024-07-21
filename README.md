@@ -100,12 +100,13 @@ Intentionally, this project does not include any on-watch user settings screens 
 
 - Press: Power On
 - 2nd Press: Wifi On
+- 3rd Press: Full-refresh ePaper display (this clears away ghost pixels)
 - Long Press (1s): Go to sleep
 
 #### Top Right
 
 - Press: Cycle watch faces (digital, hands, roman, info, etc)
-- Long Press (1s): Full-refresh ePaper display (this clears away ghost pixels)
+- Long Press (1s): Set power-saving mode and go to sleep
 
 #### Bottom Left
 
