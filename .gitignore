@@ -11,3 +11,8 @@ fonts/mdi/*
 fonts/mdi/fonts/*
 !fonts/mdi/fonts/materialdesignicons-webfont.woff
 
+
+node_modules
+package.json
+package-lock.json
+.env*

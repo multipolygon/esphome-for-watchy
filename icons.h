@@ -27,16 +27,16 @@ std::map<int, const char *> weatherIcons{
     {314, mdiWeatherPouring},            // heavy shower rain and drizzle
     {321, mdiWeatherRainy},              // shower drizzle
                                          //// RAIN ////
-    {500, mdiWeatherPartlyRainy},        // light rain
-    {501, mdiWeatherPartlyRainy},        // moderate rain
-    {502, mdiWeatherPartlyRainy},        // heavy intensity rain
-    {503, mdiWeatherPartlyRainy},        // very heavy rain
-    {504, mdiWeatherPartlyRainy},        // extreme rain
+    {500, mdiWeatherRainy},              // light rain
+    {501, mdiWeatherRainy},              // moderate rain
+    {502, mdiWeatherPouring},            // heavy intensity rain
+    {503, mdiWeatherPouring},            // very heavy rain
+    {504, mdiWeatherPouring},            // extreme rain
     {511, mdiWeatherHail},               // freezing rain
-    {520, mdiWeatherRainy},              // light intensity shower rain
-    {521, mdiWeatherRainy},              // shower rain
-    {522, mdiWeatherRainy},              // heavy intensity shower rain
-    {531, mdiWeatherRainy},              // ragged shower rain
+    {520, mdiWeatherPartlyRainy},        // light intensity shower rain
+    {521, mdiWeatherPartlyRainy},        // shower rain
+    {522, mdiWeatherPartlyRainy},        // heavy intensity shower rain
+    {531, mdiWeatherPartlyRainy},        // ragged shower rain
                                          //// SNOW ////
     {600, mdiWeatherPartlySnowy},        // light snow
     {601, mdiWeatherSnowy},              // snow
@@ -91,9 +91,9 @@ std::map<int, const char *> weatherIcons{
                                          //// RAIN ////
     {1500, mdiWeatherRainy},             // light rain
     {1501, mdiWeatherRainy},             // moderate rain
-    {1502, mdiWeatherRainy},             // heavy intensity rain
-    {1503, mdiWeatherRainy},             // very heavy rain
-    {1504, mdiWeatherRainy},             // extreme rain
+    {1502, mdiWeatherPouring},           // heavy intensity rain
+    {1503, mdiWeatherPouring},           // very heavy rain
+    {1504, mdiWeatherPouring},           // extreme rain
     {1511, mdiWeatherHail},              // freezing rain
     {1520, mdiWeatherRainy},             // light intensity shower rain
     {1521, mdiWeatherRainy},             // shower rain
@@ -211,8 +211,9 @@ const char *sky[] = {
     mdiSpaceInvaders,
     mdiSpaceStation,
     mdiUfoOutline,
-    mdiSatelliteVariant};
-const int skyLen = 10;
+    mdiSatelliteVariant,
+    mdiRocketLaunch};
+const int skyLen = 11;
 
 const char *city[] = {
     mdiCity,

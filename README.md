@@ -39,14 +39,18 @@ Update: New (2024) v3 module arrived via [Mouser Electronics](https://au.mouser.
 TODO:
 
 - ESP32-S3 on-board RTC - It works, but how!?
-- Battery voltage ADC - Untested
 - Step counter (BMA)
 
 https://github.com/sqfmi/Watchy/compare/667d86737dd3dcedf67d83cf69553b28f4e1f38b..master
 
+IDEADS:
+
+- Clicker-counter mode
+- Auto-sleep could be delayed longer if wifi is already disabled
+
 ### Watchy hardware v2
 
-- Watchy v2: [./watchy_v2.yaml](./watchy_v2.yaml)
+- Watchy v2: [./v2-watchy.yaml](./v2-watchy.yaml)
 
 Sichiray via AliExpress
 
@@ -100,24 +104,23 @@ Intentionally, this project does not include any on-watch user settings screens 
 
 - Press: Power On
 - 2nd Press: Wifi On
-- 3rd Press: Full-refresh ePaper display (this clears away ghost pixels)
-- Long Press (1s): Go to sleep
+- Long Press (2s): Set power-saving mode and go to sleep
 
 #### Top Right
 
 - Press: Cycle watch faces (digital, hands, roman, info, etc)
-- Long Press (1s): Set power-saving mode and go to sleep
+- Long Press (2s): ePaper full-refresh (this clears away ghost pixels)
 
 #### Bottom Left
 
 - Press: Start new timer (and show timers page) (up to 5 timers)
-- Long Press (1s): Cancel last active timer
-- Long Press (2s): Cancel all tiemrs
+- Long Press (2s): Cancel last active timer
+- Long Press (3s): Clear all tiemrs
 
 #### Bottom Right
 
 - Press: Show Home Assistant page (intentionally left unused for custom features)
-- Long Press (1s): Show QR Codes
+- Long Press (2s): Show QR Codes
   - Press (in QR mode): Cycle QR codes
 
 ### Weather

@@ -1,6 +1,8 @@
 ## Sourced from:
 ## https://github.com/sqfmi/Watchy/blob/71457b5f323b8c3cf214e4df18f2a1d93083613e/src/config.h
 
+VERSION: "3"
+
 # i2c:
 
 I2C_SDA_PIN: "12"
@@ -28,14 +30,19 @@ DISPLAY_DC_PIN: "34"
 DISPLAY_RES_PIN: "35"
 DISPLAY_BUSY_PIN: "36"
 
+# Battery:
+
+BATTERY_ADC_PIN: "9"
+BATTERY_VOLTAGE_DIVIDER: "1.2777"
+BATTERY_FULL: "3.8"
+BATTERY_HIGH: "3.6"
+BATTERY_LOW: "3.2"
+
 # Other:
 
 ACC_INT_1_PIN: "14"
 ACC_INT_2_PIN: "13"
 VIB_MOTOR_PIN: "17"
-BATT_ADC_PIN: "9"
-RTC_INT_PIN: "-1" # not used in v3
-ADC_VOLTAGE_DIVIDER: "1.2777"
 
 # V3 Only
 
