@@ -32,8 +32,6 @@ esphome:
           randomSeed(esp_random());
           const auto now = id(ntp).now();
 
-          id(weather_age_hours) = (id(ntp).utcnow().timestamp - id(weather_age)) / (60*60);
-
           if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_TIMER) {
             ESP_LOGI("watchy", "Keep awake mode.");
             id(keep_awake) = true;
@@ -97,6 +95,8 @@ display:
       const auto now = id(ntp).now();
       const auto utcnow = id(ntp).utcnow();
 
+      const int weatherAgeHours = (id(ntp).utcnow().timestamp - id(weather_age)) / (60*60);
+
       const int m = now.month;
       const int d = now.day_of_month;
       const int md = m * 100 + d;
@@ -152,16 +152,16 @@ display:
           }
 
           // Weather //
-          if (id(weather_temp_max) != -1000.0 && id(weather_age_hours) <= 12) {
+          if (id(weather_temp_max) != -1000.0 && weatherAgeHours <= 12) {
             it.printf(0, h, id(date_font), TextAlign::BOTTOM_LEFT, "%.0f°", id(weather_temp_max));
           }
 
           if (id(weather_code_0h) != 0) {
             it.printf(w, h, id(mdi_weather), TextAlign::BOTTOM_RIGHT, "%s%s%s%s",
-              id(weather_age_hours) <= 3 ? weatherIcons[id(weather_code_0h)] : "",
-              id(weather_age_hours) <= 6 ? weatherIcons[id(weather_code_3h)] : "",
-              id(weather_age_hours) <= 9 ? weatherIcons[id(weather_code_6h)] : "",
-              id(weather_age_hours) <= 12 ? weatherIcons[id(weather_code_9h)] : ""
+              weatherAgeHours <= 3 ? weatherIcons[id(weather_code_0h)] : "",
+              weatherAgeHours <= 6 ? weatherIcons[id(weather_code_3h)] : "",
+              weatherAgeHours <= 9 ? weatherIcons[id(weather_code_6h)] : "",
+              weatherAgeHours <= 12 ? weatherIcons[id(weather_code_9h)] : ""
             );
           }
 
@@ -211,7 +211,7 @@ display:
           it.print(getClkX(11), getClkY(11), id(small_font), TextAlign::CENTER, n ? "11" : "XI");
 
           // Weather Temp //
-          if (id(weather_temp_max) != -1000.0 && id(weather_age_hours) <= 12) {
+          if (id(weather_temp_max) != -1000.0 && weatherAgeHours <= 12) {
             it.printf(w/2, h/2 - 30, id(small_font), TextAlign::BOTTOM_CENTER, "%.0f° to %.0f°", id(weather_temp_min), id(weather_temp_max));
           }
 
@@ -237,16 +237,16 @@ display:
           }
 
           // Weather Icons //
-          if (id(weather_age_hours) <= 3) {
+          if (weatherAgeHours <= 3) {
             it.printf(w, 0, id(mdi_weather), TextAlign::TOP_RIGHT, "%s", weatherIcons[rotateWeatherCode(0, now.hour, id(weather_code_0h), id(weather_code_3h), id(weather_code_6h), id(weather_code_9h))]);
           }
-          if (id(weather_age_hours) <= 6) {
+          if (weatherAgeHours <= 6) {
             it.printf(w, h, id(mdi_weather), TextAlign::BOTTOM_RIGHT, "%s", weatherIcons[rotateWeatherCode(1, now.hour, id(weather_code_0h), id(weather_code_3h), id(weather_code_6h), id(weather_code_9h))]);
           }
-          if (id(weather_age_hours) <= 9) {
+          if (weatherAgeHours <= 9) {
             it.printf(0, h, id(mdi_weather), TextAlign::BOTTOM_LEFT, "%s", weatherIcons[rotateWeatherCode(2, now.hour, id(weather_code_0h), id(weather_code_3h), id(weather_code_6h), id(weather_code_9h))]);
           }
-          if (id(weather_age_hours) <= 12) {
+          if (weatherAgeHours <= 12) {
             it.printf(0, 0, id(mdi_weather), TextAlign::TOP_LEFT, "%s", weatherIcons[rotateWeatherCode(3, now.hour, id(weather_code_0h), id(weather_code_3h), id(weather_code_6h), id(weather_code_9h))]);
           }
 
@@ -309,18 +309,18 @@ display:
           ////////// Big Weather Icon //////////
 
           if (id(weather_code_0h) != 0) {
-            if (id(weather_temp_max) != -1000.0 && id(weather_age_hours) <= 12) {
+            if (id(weather_temp_max) != -1000.0 && weatherAgeHours <= 12) {
               it.printf(0, 0, id(date_font), TextAlign::TOP_LEFT, "%.0f°", id(weather_temp_max));
             }
 
-            if (id(weather_age_hours) <= 3) {
+            if (weatherAgeHours <= 3) {
               it.printf(w/2, h/2 - 25, id(mdi_weather_huge), TextAlign::CENTER, "%s", weatherIcons[id(weather_code_0h)]);
             }
 
             it.printf(w/2, h, id(mdi_weather_big), TextAlign::BOTTOM_CENTER, "%s%s%s",
-              id(weather_age_hours) <= 6 ? weatherIcons[id(weather_code_3h)] : "",
-              id(weather_age_hours) <= 9 ? weatherIcons[id(weather_code_6h)] : "",
-              id(weather_age_hours) <= 12 ? weatherIcons[id(weather_code_9h)] : ""
+              weatherAgeHours <= 6 ? weatherIcons[id(weather_code_3h)] : "",
+              weatherAgeHours <= 9 ? weatherIcons[id(weather_code_6h)] : "",
+              weatherAgeHours <= 12 ? weatherIcons[id(weather_code_9h)] : ""
             );
           }
 
@@ -332,19 +332,19 @@ display:
           const auto f = id(mdi_weather_very_big);
 
           if (id(weather_code_0h) != 0) {
-            if (id(weather_age_hours) <= 3) {
+            if (weatherAgeHours <= 3) {
               it.print(0, 0, f, TextAlign::TOP_LEFT, weatherIcons[id(weather_code_0h)]);
             }
-            if (id(weather_age_hours) <= 6) {
+            if (weatherAgeHours <= 6) {
               it.print(w, 0, f, TextAlign::TOP_RIGHT, weatherIcons[id(weather_code_3h)]);
             }
-            if (id(weather_temp_max) != -1000.0 && id(weather_age_hours) <= 12) {
+            if (id(weather_temp_max) != -1000.0 && weatherAgeHours <= 12) {
               it.printf(w/2, h/2, id(date_font), TextAlign::CENTER, "%.0f°", id(weather_temp_max));
             }
-            if (id(weather_age_hours) <= 9) {
+            if (weatherAgeHours <= 9) {
               it.print(0, h, f, TextAlign::BOTTOM_LEFT, weatherIcons[id(weather_code_6h)]);
             }
-            if (id(weather_age_hours) <= 12) {
+            if (weatherAgeHours <= 12) {
               it.print(w, h, f, TextAlign::BOTTOM_RIGHT, weatherIcons[id(weather_code_9h)]);
             }
           }
@@ -474,7 +474,6 @@ binary_sensor:
               id(updating_time) = true;
               id(wifi_id).enable();
             }
-            id(glass).set_full_update_every(1000);
             id(glass).update();
 
   - id: power_saving_mode_button
@@ -591,9 +590,8 @@ binary_sensor:
           id(keep_awake) = true;
           id(sleep_timeout) = 0;
           // ePaper full wipe clean:
-          id(glass).set_full_update_every(1);
+          id(glass).do_full_update();
           id(glass).update();
-          id(glass).set_full_update_every(1000);
           id(glass).update();
 
   ## Right Bottom ##
@@ -637,9 +635,9 @@ binary_sensor:
 
   - id: is_charging
     pin:
-      number: $CHRG_STATUS_PIN # Does not seem to work
-      # number: $USB_DET_PIN
-      inverted: true
+      # number: $CHRG_STATUS_PIN # Does not seem to work
+      number: $USB_DET_PIN
+      # inverted: true
     platform: gpio
     on_state:
       component.update: glass
@@ -656,15 +654,8 @@ wifi:
   on_connect:
     - delay: 10ms
     - component.update: glass
-    - lambda: |-
-        if (id(updating_time)) {
-          id(ntp).update();
-        }
-    - if:
-        condition:
-          lambda: return id(updating_weather) || id(weather_age) == 0 || id(weather_age_hours) >= 3;
-        then:
-          script.execute: update_weather
+    - component.update: ntp
+    - script.execute: update_weather
 
 script:
   - id: update_weather
@@ -684,7 +675,6 @@ script:
 
                   json::parse_json(body, [](JsonObject root) -> bool {
                     id(weather_age) = id(ntp).now().timestamp;
-                    id(weather_age_hours) = 0;
 
                     id(weather_code_0h) = weatherCode(root["list"][0]["weather"][0]["id"], root["list"][0]["sys"]["pod"]);
                     id(weather_code_3h) = weatherCode(root["list"][1]["weather"][0]["id"], root["list"][1]["sys"]["pod"]);
@@ -703,11 +693,10 @@ script:
                     return true;
                   });
 
-                  id(updating_weather) = false;
-
-                  if (!id(updating_time)) {
-                    id(glass).set_full_update_every(1);
+                  if (id(updating_weather) && !id(updating_time)) {
+                    id(glass).do_full_update();
                   }
+                  id(updating_weather) = false;
                   id(glass).update();
               - script.execute: go_to_sleep
 
@@ -740,8 +729,6 @@ script:
               then:
                 deep_sleep.enter:
                   <<: *deep_sleep_duration
-      - lambda: |-
-          id(glass).set_full_update_every(1000);
 
 time:
   ## https://esphome.io/components/time/sntp
@@ -757,7 +744,7 @@ time:
           # - pcf8563.write_time: # Only for Watchy v2
           - lambda: |-
               if (id(updating_time) && !id(updating_weather)) {
-                id(glass).set_full_update_every(1);
+                id(glass).do_full_update();
               }
               id(updating_time) = false;
               id(glass).update();
@@ -798,9 +785,6 @@ globals:
   - id: updating_weather
     type: boolean
     initial_value: "false"
-  - id: weather_age_hours
-    type: int
-    initial_value: "0"
   - id: chime
     type: boolean
     initial_value: "false"
