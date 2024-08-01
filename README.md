@@ -14,6 +14,19 @@ https://esphome.io/
 
 It is a complete, self-contained, drop-in replacement for the original firmware.
 
+## Faces
+
+<div>
+<img src="doc/faces/5.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/faces/1.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/faces/7.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/faces/2.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/faces/8.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/faces/3.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/faces/4.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/faces/6.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
+
 ## The Watch
 
 ### Watchy hardware v3 - NEW 2024!
@@ -23,7 +36,6 @@ It is a complete, self-contained, drop-in replacement for the original firmware.
 Update: New (2024) v3 module arrived via [Mouser Electronics](https://au.mouser.com/ProductDetail/SQFMI/SQFMI-WATCHY-10?qs=DRkmTr78QARN9VSJRzqRxw%3D%3D). It has hardware changes including ESP32-S3, RTC and rearranged pins.
 
 <div>
-<img src="doc/v3/07.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/mods/wrist-side-profile.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
@@ -50,24 +62,10 @@ IDEADS:
 
 ### Watchy hardware v2
 
-- Watchy v2: [./v2-watchy.yaml](./v2-watchy.yaml)
-
 Sichiray via AliExpress
 
 <div>
 <img src="doc/buttons.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/04.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-</div>
-
-## Multiple Faces
-
-<div>
-<img src="doc/06.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/07.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/08.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/10.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/19.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/14.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
 ## Design Approach
@@ -95,6 +93,14 @@ Multiple buttons and long-press buttons remain free for your own extensions.
 Intentionally, this project does not include any on-watch user settings screens or user configuration. The idea is that the ESPHome YAML file is simple and easy enough for it to be edited directly, and re-flashed to the ESP32 device. **The YAML _is_ the settings UI and the main feature of an open-source, programmable, WiFi watch is that it is easily reprogrammable over WiFi.**
 
 ## User Manual
+
+### Home Assistant
+
+TODO
+
+<div>
+<img src="doc/19.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
 
 ### Buttons
 

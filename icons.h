@@ -140,7 +140,7 @@ int weatherCode(int code, const std::string &daynight)
   return code;
 };
 
-int getWeatherCodeIndex(int quadrant, int h24)
+int rotateWeatherCode(int quadrant, int h24)
 {
   const int h = h24 % 12;
   int offset = 0;
@@ -161,28 +161,6 @@ int getWeatherCodeIndex(int quadrant, int h24)
     offset = 1;
   }
   return (offset + quadrant) % 4;
-};
-
-int rotateWeatherCode(int quadrant, int h24, int a, int b, int c, int d)
-{
-  int i = getWeatherCodeIndex(quadrant, h24);
-  if (i == 0)
-  {
-    return a;
-  }
-  if (i == 1)
-  {
-    return b;
-  }
-  if (i == 2)
-  {
-    return c;
-  }
-  if (i == 3)
-  {
-    return d;
-  }
-  return 0;
 };
 
 int getClkXY(int hour, int xy)
