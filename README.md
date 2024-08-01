@@ -16,6 +16,8 @@ It is a complete, self-contained, drop-in replacement for the original firmware.
 
 ## Faces
 
+Included faces:
+
 <div>
 <img src="doc/faces/5.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/faces/1.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
@@ -62,11 +64,7 @@ IDEADS:
 
 ### Watchy hardware v2
 
-Sichiray via AliExpress
-
-<div>
-<img src="doc/buttons.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-</div>
+- Watchy v2: [./v2-watchy.yaml](./v2-watchy.yaml)
 
 ## Design Approach
 
@@ -93,14 +91,6 @@ Multiple buttons and long-press buttons remain free for your own extensions.
 Intentionally, this project does not include any on-watch user settings screens or user configuration. The idea is that the ESPHome YAML file is simple and easy enough for it to be edited directly, and re-flashed to the ESP32 device. **The YAML _is_ the settings UI and the main feature of an open-source, programmable, WiFi watch is that it is easily reprogrammable over WiFi.**
 
 ## User Manual
-
-### Home Assistant
-
-TODO
-
-<div>
-<img src="doc/19.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-</div>
 
 ### Buttons
 
@@ -136,6 +126,14 @@ The watch shows a weather forecast over the upcoming 12 hours. This is a simple,
 <div>
 <img src="doc/weather01.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/weather02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
+
+### Home Assistant
+
+TODO
+
+<div>
+<img src="doc/19.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
 ### Timers Operation
