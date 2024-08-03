@@ -66,7 +66,7 @@ IDEADS:
 
 ### Watchy hardware v2
 
-A backwards compatible version is also available older v2 hardward: [./v2-watchy.yaml](./v2-watchy.yaml)
+A backwards compatible version is also available for older v2 hardware: [./v2-watchy.yaml](./v2-watchy.yaml)
 
 ## Design Approach
 
