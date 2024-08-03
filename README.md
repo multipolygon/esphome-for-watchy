@@ -1,6 +1,6 @@
 # ESPHome-for-Watchy
 
-Single-file source code here: [./watchy.yaml](./watchy.yaml)
+Main source code file is: [./watchy.yaml](./watchy.yaml)
 
 [Watchy](https://watchy.sqfmi.com/) is an [open-hardware](https://watchy.sqfmi.com/docs/hardware), ESP32 wrist watch with e-paper display designed by SQFMI.
 
@@ -17,8 +17,6 @@ Included faces (cycle through them using the top-right button):
 <img src="doc/faces/2.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/faces/8.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/faces/3.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<!-- <img src="doc/faces/4.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" /> -->
-<!-- <img src="doc/faces/6.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" /> -->
 </div>
 
 ## Install / Flash
@@ -56,13 +54,6 @@ Update: New (2024) v3 module arrived via [Mouser Electronics](https://au.mouser.
 <img src="doc/v3/05.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/v3/06.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
-
-IDEADS:
-
-- Clicker-counter mode
-- Auto-sleep could be delayed longer if wifi is already disabled
-- Preset count-down timers
-- Enable/disable hourly alarms on the watch
 
 ### Watchy hardware v2
 
@@ -206,7 +197,7 @@ Save the files to `fonts` directory.
 1. Find new icons over at [Pictogrammers Material Design Icons](https://pictogrammers.com/library/mdi/)
 1. Click on the icon and copy the name like this `mdiAbacus` from the code like this `import { mdiAbacus } from '@mdi/js';`
 1. Paste the new icon name under the `fonts:` section of `watchy.yaml` with a leading `$`, eg `$mdiAbacus`
-1. Then run `node generate-mdi.js` to make the icon available in CPP and YAML files
+1. Then run `cd utils && node generate-mdi.js` to make the icon available in CPP and YAML files
 1. Or, alternatively, manually add the new icon to `mdi.yaml` and `mdi.h`
 
 ### Install ESPHome compiler tool on Mac OSX
@@ -220,7 +211,7 @@ https://esphome.io/guides/installing_esphome.html#mac
 Download:
 https://raw.githubusercontent.com/Homebrew/homebrew-core/fc831c5d76dc2eb6dbe2265ca9b6ca93d27140bc/Formula/p/pillow.rb
 
-    brew install ./pillow.rb
+    brew install ./fonts/pillow.rb
     brew pin pillow
 
 ### Enter Watchy Bootloader Mode (v3 only)
@@ -236,8 +227,8 @@ To upload new firmware/watchfaces to Watchy, you will need to enter **bootloader
 ### Install Flash with a unique ID
 
 1. `cp config-example.yaml config.yaml`
-1. Edit your secrets.yaml
-   1 `esphome -s ID 1 run watchy.yaml`
+1. Edit your config.yaml
+1. `esphome -s ID 1 run watchy.yaml`
 
 ### Reset Watchy (v3 only)
 
@@ -283,3 +274,12 @@ The minor customisations for Watchy are:
 https://esphome.io/components/captive_portal.html
 
 Captive Portal could be enabled to generate a reusable firmware binary and set wifi name and password by connecting directly to the device.
+
+## Ideas
+
+- Sync with calendar and daily even summaries
+- Clicker-counter mode
+- Auto-sleep could be delayed longer if wifi is already disabled
+- Preset count-down timers
+- Enable/disable hourly alarms on the watch
+- Change time-zone on watch when travelling

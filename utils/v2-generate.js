@@ -4,7 +4,7 @@
 import yaml from "yaml";
 import * as fs from "fs";
 
-const v3 = fs.readFileSync("./watchy.yaml", "utf8");
+const v3 = fs.readFileSync("../watchy.yaml", "utf8");
 
 const v2 = yaml.parseDocument(
   v3
@@ -35,4 +35,4 @@ const isCharging = v2
 isCharging.delete("pin");
 isCharging.set("platform", "template");
 
-fs.writeFileSync("v2-watchy.yaml", v2.toString());
+fs.writeFileSync("../v2-watchy.yaml", v2.toString());

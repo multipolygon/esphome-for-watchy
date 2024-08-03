@@ -1,7 +1,7 @@
-const fs = require("fs");
+import * as fs from "fs";
 
 const required = fs
-  .readFileSync("./watchy.yaml")
+  .readFileSync("../watchy.yaml")
   .toString()
   .match(/"\$mdi\w+?"/g)
   .map((x) => x.replaceAll('"', "").replaceAll("$", ""));
@@ -17,7 +17,7 @@ function camelize(str) {
 }
 
 const x = fs
-  .readFileSync("fonts/mdi/scss/_variables.scss")
+  .readFileSync("../fonts/mdi/scss/_variables.scss")
   .toString()
   .split("(")[1]
   .split(")")[0]
@@ -29,5 +29,11 @@ const x = fs
 
 console.log(x.length);
 
-fs.writeFileSync("./mdi.yaml", x.map(([name, code]) => `${name}: "\\U000${code}"`).join("\n") + "\n");
-fs.writeFileSync("./mdi.h", x.map(([name, code]) => `const char *${name} = "\\U000${code}";`).join("\n") + "\n");
+fs.writeFileSync(
+  "../mdi.yaml",
+  x.map(([name, code]) => `${name}: "\\U000${code}"`).join("\n") + "\n"
+);
+fs.writeFileSync(
+  "../mdi.h",
+  x.map(([name, code]) => `const char *${name} = "\\U000${code}";`).join("\n") + "\n"
+);
