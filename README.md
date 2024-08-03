@@ -1,22 +1,14 @@
 # ESPHome-for-Watchy
 
-ESPHome YAML: [./watchy.yaml](./watchy.yaml)
+Single-file source code here: [./watchy.yaml](./watchy.yaml)
 
-Watchy is an open-hardware, ESP32 wrist watch with e-paper display designed by SQFMI.
+[Watchy](https://watchy.sqfmi.com/) is an [open-hardware](https://watchy.sqfmi.com/docs/hardware), ESP32 wrist watch with e-paper display designed by SQFMI.
 
-https://watchy.sqfmi.com/
-
-https://watchy.sqfmi.com/docs/hardware
-
-This project is a functional ESPHome configuration file for the Watchy hardware.
-
-https://esphome.io/
-
-It is a complete, self-contained, drop-in replacement for the original firmware.
+This project is a complete working firmware, built upon [ESPHome](https://esphome.io/), with [single-file source-code](./watchy.yaml), full v3 hardware support, weather forecast, multiple faces, [beautiful pixel-art MDI icons](https://pictogrammers.com/library/mdi/), stop-watch timers, low-power-mode, firmware updatable over wifi and easy Home Assistant customisation. It is a complete, self-contained, drop-in replacement for the original Watchy firmware.
 
 ## Faces
 
-Included faces:
+Included faces (cycle through them using the top-right button):
 
 <div>
 <img src="doc/faces/5.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
@@ -25,9 +17,24 @@ Included faces:
 <img src="doc/faces/2.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/faces/8.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/faces/3.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/faces/4.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/faces/6.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<!-- <img src="doc/faces/4.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" /> -->
+<!-- <img src="doc/faces/6.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" /> -->
 </div>
+
+## Install / Flash
+
+1. [Install ESPHome compiler](https://esphome.io/guides/getting_started_command_line) and optional [VSCode extension](https://marketplace.visualstudio.com/items?itemName=ESPHome.esphome-vscode)
+1. Sign up at https://openweathermap.org/ to get an API key
+1. `cp config-example.yaml config.yaml`
+1. Edit your `config.yaml` file
+1. Connect your Watchy to USB and run `esphome run watchy.yaml`
+1. Thats it!
+
+## About ESPHome
+
+[ESPHome](https://esphome.io/): "is a system to control your microcontrollers by simple yet powerful configuration files and control them remotely through Home Automation systems."
+
+As this project is based on ESPHome, there is excellent, existing documentation and community support for all the submodules and their many customisation options. For example: [wifi with multiple networks](https://esphome.io/components/wifi.html#connecting-to-multiple-networks), [display graphics and rendering](https://esphome.io/components/display/), [ePaper drivers](https://esphome.io/components/display/waveshare_epaper.html), [GPIO](https://esphome.io/components/binary_sensor/gpio), [button actions](https://esphome.io/components/binary_sensor/), [NTP time-sync](https://esphome.io/components/time/sntp.html), [time events](https://esphome.io/components/time/#on-time-trigger) and [HTTP API calls](https://esphome.io/components/http_request.html), [ESP32 deep-sleep](https://esphome.io/components/deep_sleep.html), [wireless firmware updates (OTA)](https://esphome.io/components/ota/), [captive portal](https://esphome.io/components/captive_portal.html), [battery voltage ADC](https://esphome.io/components/sensor/adc.html) and many more.
 
 ## The Watch
 
@@ -35,7 +42,7 @@ Included faces:
 
 - Watchy v3: [./watchy.yaml](./watchy.yaml)
 
-Update: New (2024) v3 module arrived via [Mouser Electronics](https://au.mouser.com/ProductDetail/SQFMI/SQFMI-WATCHY-10?qs=DRkmTr78QARN9VSJRzqRxw%3D%3D). It has hardware changes including ESP32-S3, RTC and rearranged pins.
+Update: New (2024) v3 module arrived via [Mouser Electronics](https://au.mouser.com/ProductDetail/SQFMI/SQFMI-WATCHY-10?qs=DRkmTr78QARN9VSJRzqRxw%3D%3D). It has hardware changes including ESP32-S3, RTC and [rearranged pins](https://github.com/sqfmi/Watchy/compare/667d86737dd3dcedf67d83cf69553b28f4e1f38b..master).
 
 <div>
 <img src="doc/mods/wrist-side-profile.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
@@ -50,21 +57,16 @@ Update: New (2024) v3 module arrived via [Mouser Electronics](https://au.mouser.
 <img src="doc/v3/06.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-TODO:
-
-- ESP32-S3 on-board RTC - It works, but how!?
-- Step counter (BMA)
-
-https://github.com/sqfmi/Watchy/compare/667d86737dd3dcedf67d83cf69553b28f4e1f38b..master
-
 IDEADS:
 
 - Clicker-counter mode
 - Auto-sleep could be delayed longer if wifi is already disabled
+- Preset count-down timers
+- Enable/disable hourly alarms on the watch
 
 ### Watchy hardware v2
 
-- Watchy v2: [./v2-watchy.yaml](./v2-watchy.yaml)
+A backwards compatible version is also available older v2 hardward: [./v2-watchy.yaml](./v2-watchy.yaml)
 
 ## Design Approach
 
@@ -128,14 +130,6 @@ The watch shows a weather forecast over the upcoming 12 hours. This is a simple,
 <img src="doc/weather02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-### Home Assistant
-
-TODO
-
-<div>
-<img src="doc/19.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-</div>
-
 ### Timers Operation
 
 Press the left-bottom button to show the timers page:
@@ -162,6 +156,23 @@ When the page is full, a button press will discard the oldest timer and start a 
 <img src="doc/18.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
+### Home Assistant
+
+Create your own customisations for Home Assistant integration. See [documentation](https://esphome.io/components/api.html)
+
+<div>
+<img src="doc/19.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
+
+### Weather Faces
+
+These are useful for wall-mounting older/spare Watchy modules:
+
+<div>
+<img src="doc/faces/3.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/faces/4.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
+
 ### QR-Code Contact Card / ID Badge
 
 You know... just in case you accidentally find yourself at a meet-up or conference without a phone, tablet or business card and can't remember your own email or website addresses, don't panic, you have your watch!
@@ -176,10 +187,7 @@ vCard, Website and RSS URL can be set in `secrets.yaml`.
 <img src="doc/qr-rss.jpeg" title="RSS" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-## Install / Flash
-
-1. `cp secrets.example.yaml secrets.yaml`
-1. Edit your secrets.yaml
+## Installation Notes
 
 ### Fonts
 
@@ -193,7 +201,15 @@ https://github.com/Templarian/MaterialDesign-Webfont/tree/master/fonts
 
 Save the files to `fonts` directory.
 
-### Install ESPHome on Mac OSX
+### Material Design Icons
+
+1. Find new icons over at [Pictogrammers Material Design Icons](https://pictogrammers.com/library/mdi/)
+1. Click on the icon and copy the name like this `mdiAbacus` from the code like this `import { mdiAbacus } from '@mdi/js';`
+1. Paste the new icon name under the `fonts:` section of `watchy.yaml` with a leading `$`, eg `$mdiAbacus`
+1. Then run `node generate-mdi.js` to make the icon available in CPP and YAML files
+1. Or, alternatively, manually add the new icon to `mdi.yaml` and `mdi.h`
+
+### Install ESPHome compiler tool on Mac OSX
 
 https://esphome.io/guides/installing_esphome.html#mac
 
@@ -207,7 +223,7 @@ https://raw.githubusercontent.com/Homebrew/homebrew-core/fc831c5d76dc2eb6dbe2265
     brew install ./pillow.rb
     brew pin pillow
 
-### Enter Bootloader Mode (v3 only)
+### Enter Watchy Bootloader Mode (v3 only)
 
 https://watchy.sqfmi.com/docs/getting-started#uploading-new-watchfacesfirmware
 
@@ -217,16 +233,18 @@ To upload new firmware/watchfaces to Watchy, you will need to enter **bootloader
 1. Press and hold the top 2 buttons for more than 4 seconds, then release the **Left button first**, before releasing the Up button
 1. You should now see an ESP32S3 device enumerate a serial port i.e. COM, cu.\*
 
-### Flash
+### Install Flash with a unique ID
 
-    esphome -s ID 0 run watchy.yaml
+1. `cp config-example.yaml config.yaml`
+1. Edit your secrets.yaml
+   1 `esphome -s ID 1 run watchy.yaml`
 
-### Reset (v3 only)
+### Reset Watchy (v3 only)
 
 1. Press and hold the top 2 buttons for more than 4 seconds, then release the **Right button first**, before releasing the Back button
 1. Watchy should now reset, wait a few seconds for it to boot up and refresh the screen
 
-## Mods
+## Watchy Hardware Mods
 
 _Disclaimer: This following is not advice._
 
@@ -246,3 +264,22 @@ I discarded the huge, clumsy watch case that comes in the box! Threading a Garmi
 <img src="doc/mods/band-side-view.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/mods/wrist-side-profile.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
+
+## Patched ESPHome ePaper Component
+
+See https://esphome.io/components/external_components.html
+
+This project used a slightly modified module forked from the main ESPHome project.
+
+The minor customisations for Watchy are:
+
+- Prevent a full ePaper refresh on ESP32 boot which is not the desired behaviour for a low-power watch.
+  https://github.com/multipolygon/esphome/commit/6407a74ff9855d515cb16fef67f90c748f9800ea
+- Add a pubic `do_full_update()` method to trigger the full-refresh only at certain times of day - a full update clears away ghost pixels.
+  https://github.com/multipolygon/esphome/commit/ecf116058cc4b20007126f9099f4b07f4d46b9dd
+
+## Captive Portal
+
+https://esphome.io/components/captive_portal.html
+
+Captive Portal could be enabled to generate a reusable firmware binary and set wifi name and password by connecting directly to the device.

@@ -1,16 +1,15 @@
-WIFI_SSID:
-WIFI_PASSWORD:
-OTA_PASSWORD:
-API_PASSWORD:
-WEATHER_KEY:
-WEATHER_CITY_ID: "2158177" # Melbourne
+WIFI_SSID: "Set your wifi name here"
+WIFI_PASSWORD: "Set your wifi password here"
+OTA_PASSWORD: "asdf1234"
+WEATHER_KEY: "Sign up at https://openweathermap.org/ to get a key"
+WEATHER_CITY_ID: "2158177" # Australia/Melbourne
 UNITS: metric
 LANG: en
 TIME_ZONE: Australia/Melbourne
 SNTP_SERVER_1: "0.pool.ntp.org"
 SNTP_SERVER_2: "1.pool.ntp.org"
 SNTP_SERVER_3: "2.pool.ntp.org"
-LATITUDE: "-37.9518"
+LATITUDE: "-37.9518" # Australia/Melbourne
 LONGITUDE: "145.3189"
 QR_WEBSITE_URL: "https://multipolygon.net"
 QR_RSS_URL: "https://multipolygon.net/rss.xml"

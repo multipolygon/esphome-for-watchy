@@ -1,4 +1,5 @@
 secrets.yaml
+config.yaml
 .esphome
 .DS_Store
 demo.yaml
