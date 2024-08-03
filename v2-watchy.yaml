@@ -16,9 +16,9 @@ substitutions:
   MODE_HA: "2"
   MODE_QR: "3"
 
-# logger:
-#   # https://esphome.io/components/logger.html
-#   level: ERROR
+logger:
+  # https://esphome.io/components/logger.html#log-levels
+  level: NONE
 
 esphome:
   # https://esphome.io/components/esphome.html#esphome-core-configuration
@@ -663,6 +663,10 @@ wifi:
     - component.update: ntp
     - script.execute: update_weather
 
+improv_serial:
+  # https://esphome.io/components/improv_serial.html
+  # This component allows wifi to be set by https://web.esphome.io/
+
 script:
   # https://esphome.io/components/script.html
 
@@ -820,17 +824,19 @@ globals:
   - id: weather_codes
     type: int[4]
     restore_value: yes
+    initial_value: "{800, 210, 502, 1800}"
   - id: weather_times
     type: int[4]
     restore_value: yes
+    initial_value: "{2019646800, 2019646800, 2019646800, 2019646800}"
   - id: weather_temp_min
     type: float
     restore_value: yes
-    initial_value: "1000.0"
+    initial_value: "14"
   - id: weather_temp_max
     type: float
     restore_value: yes
-    initial_value: "-1000.0"
+    initial_value: "25"
   - id: active_timer
     type: int
     restore_value: yes
@@ -1051,7 +1057,7 @@ external_components:
   # The minor customisations for Watchy are:
   #  Prevent a full ePaper refresh on ESP32 boot which is not the desired behaviour for a low-power watch.
   #   https://github.com/multipolygon/esphome/commit/6407a74ff9855d515cb16fef67f90c748f9800ea
-  #  Add a pubic `do_full_update()` method to trigger the full-refresh only at certain times of day - a full update clears away ghost pixels. 
+  #  Add a pubic `do_full_update()` method to trigger the full-refresh only at certain times of day - a full update clears away ghost pixels.
   #   https://github.com/multipolygon/esphome/commit/ecf116058cc4b20007126f9099f4b07f4d46b9dd
   - components: [ waveshare_epaper ]
     source:
