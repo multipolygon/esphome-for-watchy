@@ -840,7 +840,7 @@ globals:
     restore_value: yes
 
 font:
-  # https://esphome.io/components/display/index.html
+  # https://esphome.io/components/display/fonts.html
 
   # https://freefonts.co/fonts/futura-bold
 
