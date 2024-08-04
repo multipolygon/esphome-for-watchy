@@ -134,9 +134,9 @@ The watch shows a weather forecast over the upcoming 12 hours. This is a simple,
 
 ### Alarms
 
-There is the options to enable to separate alarms via the menu.
+There is the option to enable two separate alarms via the menu.
 
-Alarms are set to the hour (0-23) (no minute option) to keep usability simpler.
+Alarms are set to the hour (0-23) (no minute option, to keep usability simpler).
 
 To silence a buzzing alarm, press the upper-left button.
 
@@ -277,20 +277,25 @@ I discarded the huge, clumsy watch case that comes in the box! Threading a Garmi
 
 See https://esphome.io/components/external_components.html
 
-This project used a slightly modified module forked from the main ESPHome project.
+This project uses a slightly modified module, forked from the main ESPHome project.
 
 The minor customisations for Watchy are:
 
 - Prevent a full ePaper refresh on ESP32 boot which is not the desired behaviour for a low-power watch.
+
   https://github.com/multipolygon/esphome/commit/6407a74ff9855d515cb16fef67f90c748f9800ea
+
 - Add a pubic `do_full_update()` method to trigger the full-refresh only at certain times of day - a full update clears away ghost pixels.
+
   https://github.com/multipolygon/esphome/commit/ecf116058cc4b20007126f9099f4b07f4d46b9dd
 
-## Captive Portal
+## Improv: Updating Wifi Name and Password
 
-https://esphome.io/components/captive_portal.html
+[Improv protocol](https://www.improv-wifi.com/) is enabled to allow updating the WiFi name and password without doing a full firmware re-flash.
 
-Captive Portal could be enabled to generate a reusable firmware binary and set wifi name and password by connecting directly to the device.
+Using Chrome, to go [web.esphome.io](https://web.esphome.io/), then connect, then choose update wifi from the top-right menu list.
+
+See: https://esphome.io/components/improv_serial.html
 
 ## Ideas
 
