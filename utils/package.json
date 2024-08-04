@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "v2-generate": "nodemon --watch ../watchy.yaml ./v2-generate.js"
+    "monitor": "nodemon --watch ../watchy.yaml ./run.js"
   },
   "dependencies": {
     "nodemon": "^3.1.4",

@@ -35,7 +35,7 @@ esphome:
           const auto utcnow = id(ntp).utcnow();
 
           id(alarm_buzzing) =
-            (now.minute == 0 || id(power_saving_mode)) && (
+            (now.minute == 0 || id(power_saving_mode).state) && (
               id(alarm_a_enable).state && int(id(alarm_a_hour).state) == now.hour ||
               id(alarm_b_enable).state && int(id(alarm_b_hour).state) == now.hour
             );
@@ -44,7 +44,7 @@ esphome:
             id(keep_awake) = true;
           }
 
-          if (!id(power_saving_mode)) {
+          if (!id(power_saving_mode).state) {
             id(chime) = now.minute == 0 && (now.hour == 8 || now.hour == 12 || now.hour == 16);
 
             if ((utcnow.hour % 3 == 0 && utcnow.minute == 0) || esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED) {
@@ -105,7 +105,9 @@ display:
 
       const char *wifiIcon = id(keep_awake) ?
         (id(wifi_id).is_disabled() ? mdiEmoticonHappyOutline : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff)) :
-        (id(power_saving_mode) ? mdiSleep : "");
+        (id(power_saving_mode).state ? mdiSleep : "");
+
+      const char *alarmEnabledIcon = id(alarm_a_enable).state || id(alarm_b_enable).state ? mdiAlarmCheck : "";
 
       const char *batteryIcon = id(is_charging).state ? mdiBatteryChargingHigh : (
         !id(battery).has_state() ? mdiBatteryRemoveOutline : (
@@ -118,10 +120,9 @@ display:
         )
       );
 
-      const char *alarmIcon =
+      const char *alertIcon =
         id(alarm_buzzing) ? mdiBellRingOutline :
         id(chime) ? mdiBellOutline :
-        (id(alarm_a_enable).state || id(alarm_b_enable).state) ? mdiAlarmCheck :
         "";
 
       const char *calendarIcon = "";
@@ -160,7 +161,7 @@ display:
           }
           it.printf(w/2-10, h/2, id(time_font), TextAlign::CENTER_RIGHT, "%d", now.hour);
           it.print(w/2, h/2-5, id(time_font), TextAlign::CENTER, ":");
-          if (!id(power_saving_mode)) {
+          if (!id(power_saving_mode).state) {
             it.printf(w/2+10, h/2, id(time_font), TextAlign::CENTER_LEFT, "%02d", now.minute);
           }
 
@@ -176,7 +177,7 @@ display:
           );
 
           // Status Icons //
-          it.printf(w/2, h/2+46, id(mdi_small), TextAlign::CENTER, "%s%s%s", alarmIcon, wifiIcon, batteryIcon);
+          it.printf(w/2, h/2+46, id(mdi_small), TextAlign::CENTER, "%s%s%s%s", alertIcon, wifiIcon, batteryIcon, alarmEnabledIcon);
 
           // Active Timer //
           if (id(timers)[id(active_timer)] != 0) {
@@ -185,14 +186,14 @@ display:
               it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER,
                 "%dh %02dm",
                 (activeTimer) / (60*60),
-                id(power_saving_mode) ? 0 : ((activeTimer / 60) % 60)
+                id(power_saving_mode).state ? 0 : ((activeTimer / 60) % 60)
               );
             } else {
               it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER,
                 "%dd %dh %02dm",
                 activeTimer / (24*60*60),
                 (activeTimer % (24*60*60)) / (60*60),
-                id(power_saving_mode) ? 0 : ((activeTimer / 60) % 60)
+                id(power_saving_mode).state ? 0 : ((activeTimer / 60) % 60)
               );
             }
           } else {
@@ -237,12 +238,12 @@ display:
           double hr = ((now.hour % 12 + now.minute / 60.0) / 12.0 * 360.0 - 90.0) * (M_PI / 180.0);
           for (int x=-2; x<=2; ++x) {
             for (int y=-2; y<=2; ++y) {
-              it.line(w/2 +x, h/2 +y, w/2.0 + w/4.0 * cos(hr) +x, h/2.0 + h/4.0 * sin(hr) +y);
+              it.line(w/2 +x, h/2 +y, w/2.0 + w/3.5 * cos(hr) +x, h/2.0 + h/3.5 * sin(hr) +y);
             }
           }
 
-          if (!id(power_saving_mode)) {
-            // Minute Hand //
+          // Minute Hand //
+          if (!id(power_saving_mode).state) {
             double mn = (now.minute / 60.0 * 360.0 - 90.0) * (M_PI / 180.0);
             for (int x=-1; x<=1; ++x) {
               for (int y=-1; y<=1; ++y) {
@@ -276,8 +277,8 @@ display:
           }
 
           // Status Icons //
-          it.printf(w*1/4, h/2, id(mdi_small), TextAlign::CENTER, "%s%s", alarmIcon, wifiIcon);
-          it.printf(w*3/4, h/2, id(mdi_small), TextAlign::CENTER, "%s", batteryIcon);
+          it.printf(w*1/4, h/2, id(mdi_small), TextAlign::CENTER, "%s%s", alertIcon, wifiIcon);
+          it.printf(w*3/4, h/2, id(mdi_small), TextAlign::CENTER, "%s%s", batteryIcon, alarmEnabledIcon);
 
         } else if (id(face) == FACE_INFO_DEBUG) {
 
@@ -425,7 +426,11 @@ display:
 
       } else if (id(mode) == $MODE_MENU) {
 
-        it.menu(0, 0, id(settings_menu), w, h);
+        it.print(w + 8, 0 - 5, id(mdi_small), TextAlign::TOP_RIGHT, "$mdiArrowUpThin");
+        it.print(w + 8, h + 5, id(mdi_small), TextAlign::BOTTOM_RIGHT, "$mdiArrowDownThin");
+        it.print(0 - 2, h + 4, id(mdi_small), TextAlign::BOTTOM_LEFT, "$mdiCheckCircleOutline");
+        it.print(0 - 5, 0 - 3, id(mdi_small), TextAlign::TOP_LEFT, "$mdiArrowLeftTop");
+        it.menu(30, 10, id(menu), w, h - 10);
 
       } else if (id(mode) >= 1000) {
         id(mode) = id(mode) - 1000;
@@ -458,7 +463,7 @@ display:
 
 graphical_display_menu:
   # https://esphome.io/components/display_menu/
-  id: settings_menu
+  id: menu
   active: true
   mode: rotary
   font: small_font
@@ -467,22 +472,27 @@ graphical_display_menu:
       text: Alarm A
       switch: alarm_a_enable
     - type: number
-      text: Alarm A
+      text: "              "
       number: alarm_a_hour
       value_lambda: return (String(int(id(alarm_a_hour).state)) + ":00").c_str();
       on_value:
         then:
           lambda: id(alarm_a_enable).turn_on();
+
     - type: switch
       text: Alarm B
       switch: alarm_b_enable
     - type: number
-      text: Alarm B
+      text: "              "
       number: alarm_b_hour
       value_lambda: return (String(int(id(alarm_b_hour).state)) + ":00").c_str();
       on_value:
         then:
           lambda: id(alarm_b_enable).turn_on();
+
+    - type: switch
+      text: Power save
+      switch: power_saving_mode
 
 binary_sensor:
   # https://esphome.io/components/binary_sensor
@@ -508,8 +518,9 @@ binary_sensor:
               id(buzzer).turn_off();
             } else if (id(mode) != $MODE_FACES) {
               id(mode) = $MODE_FACES;
+              id(menu).show_main();
             } else if (id(wifi_id).is_disabled()) {
-              id(power_saving_mode) = false;
+              id(power_saving_mode).turn_off();
               id(updating_weather) = true;
               id(wifi_id).enable();
             } else {
@@ -543,7 +554,7 @@ binary_sensor:
     on_press:
       - lambda: |-
           if (id(mode) == $MODE_FACES) {
-            id(power_saving_mode) = true;
+            id(power_saving_mode).state = true;
             id(keep_awake) = false;
             id(updating_weather) = false;
             id(wifi_id).disable();
@@ -567,7 +578,7 @@ binary_sensor:
             id(keep_awake) = true;
             id(sleep_timeout) = 0;
             if (id(mode) == $MODE_MENU) {
-              id(settings_menu).enter();
+              id(menu).enter();
             } else if (id(mode) == $MODE_TIMERS) {
               id(active_timer) = (id(active_timer) + 1) % 5;
               id(timers)[id(active_timer)] = id(ntp).utcnow().timestamp;
@@ -595,6 +606,8 @@ binary_sensor:
               id(active_timer) -= 1;
             }
             id(epaper).update();
+          } else if (id(mode) == $MODE_MENU) {
+            id(menu).show_main();
           }
 
   - id: clear_all_timers_button
@@ -636,7 +649,7 @@ binary_sensor:
             id(keep_awake) = true;
             id(sleep_timeout) = 0;
             if (id(mode) == $MODE_MENU) {
-              id(settings_menu).up();
+              id(menu).up();
             } else if (id(mode) == $MODE_FACES) {
               id(face) = (id(face) + 1) % $FACE_COUNT;
             } else if (id(mode) == $MODE_QR) {
@@ -681,7 +694,7 @@ binary_sensor:
             id(keep_awake) = true;
             id(sleep_timeout) = 0;
             if (id(mode) == $MODE_MENU) {
-              id(settings_menu).down();
+              id(menu).down();
             } else {
               id(mode) = $MODE_MENU;
             }
@@ -787,7 +800,7 @@ script:
                 - deep_sleep.enter: &deep_sleep_duration
                     sleep_duration: !lambda |-
                       const auto now = id(ntp).now();
-                      if (id(power_saving_mode)) {
+                      if (id(power_saving_mode).state) {
                         return ((60 - now.minute) * 60 - now.second) * 1000;
                       } else {
                         return 60000;
@@ -876,10 +889,6 @@ globals:
     initial_value: "false"
   ## Persistent ##
   # These following variables will be preserved (saved in flash memory) even after the ESP32 reboots
-  - id: power_saving_mode
-    type: bool
-    restore_value: yes
-    initial_value: "false"
   - id: face
     type: int
     restore_value: yes
@@ -947,6 +956,9 @@ font:
       # See ./mdi.yaml
       - "$mdiAccountBox"
       - "$mdiAlarmCheck"
+      - "$mdiArrowDownThin"
+      - "$mdiArrowLeftTop"
+      - "$mdiArrowUpThin"
       - "$mdiBatteryChargingHigh"
       - "$mdiBatteryHigh"
       - "$mdiBatteryLow"
@@ -955,6 +967,7 @@ font:
       - "$mdiBatteryRemoveOutline"
       - "$mdiBellOutline"
       - "$mdiBellRingOutline"
+      - "$mdiCheckCircleOutline"
       - "$mdiEmoticonHappyOutline"
       - "$mdiHomeAssistant"
       - "$mdiRssBox"
@@ -1081,6 +1094,8 @@ sensor:
 switch:
   # https://esphome.io/components/switch/index.html
   # https://esphome.io/components/switch/gpio.html
+  # https://esphome.io/components/switch/template.html
+
   - platform: gpio
     id: buzzer
     pin: $VIB_MOTOR_PIN
@@ -1093,6 +1108,11 @@ switch:
 
   - <<: *alarm_enable
     id: alarm_b_enable
+
+  - platform: template
+    id: power_saving_mode
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
 
 number:
   # https://esphome.io/components/number/template.html

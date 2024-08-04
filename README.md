@@ -89,34 +89,35 @@ Intentionally, this project does not include any on-watch user settings screens 
 
 <!-- <img src="doc/buttons.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" /> -->
 
-#### Upper Left
+#### Upper Left :: Power/Home
 
 - Press: Power On / Silence Alarm
 - 2nd Press: Home / Wifi On / ePaper Refresh
 - Long Press (3s): ePaper Refresh
 - Long Press (5s): Set power-saving mode and go to sleep
 
-#### Upper Right
+#### Upper Right :: Cycle Faces
 
 - Press: Cycle watch faces (digital, hands, roman, info, etc) or QR Codes
 - Long Press (3s): Toggle QR Codes mode
 
-#### Lower Left
+#### Lower Left :: Timers
 
 - Press: Show Timers
 - 2nd Press: Start a new timer (up to 5 timers)
 - Long Press (3s): Cancel last active timer
 - Long Press (5s): Clear all timers
 
-#### Lower Right
+#### Lower Right :: Menu
 
 - Press: Settings Menu
 
 When in Settings Menu mode:
 
-- Menu Up: Upper-Right Button
-- Menu Down: Lower-Right Button
-- Menu Select/Save: Lower-Left Button
+- Upper Right Button: Up
+- Lower Right Button: Down
+- Lower Left Button: Select/Save
+- Upper Left Button: Exit the menu
 
 <div>
 <img src="doc/menu.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
