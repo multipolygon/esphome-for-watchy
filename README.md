@@ -63,7 +63,7 @@ A backwards compatible version is also available for older v2 hardware: [./v2-wa
 
 ### Low Power Usage
 
-A low-distraction, low-interaction, unobtrusive and wearable device.
+A [minimalist](https://en.wikipedia.org/wiki/Minimalism), low-distraction, low-interaction, unobtrusive and wearable device.
 
 This is primarily a watch, for showing the time, with a few extra "read-only", "at-a-glance" watch-like complications such as a weather forecast.
 
@@ -119,7 +119,7 @@ When in Settings Menu mode:
 - Menu Select/Save: Lower-Left Button
 
 <div>
-<img src="doc/menu.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/menu.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
 </div>
 
 ### Weather
@@ -129,6 +129,19 @@ The watch shows a weather forecast over the upcoming 12 hours. This is a simple,
 <div>
 <img src="doc/weather01.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/weather02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
+
+### Alarms
+
+There is the options to enable to separate alarms via the menu.
+
+Alarms are set to the hour (0-23) (no minute option) to keep usability simpler.
+
+To silence a buzzing alarm, press the upper-left button.
+
+<div>
+  <img src="doc/menu.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
+  <img src="doc/alarm-enabled.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
 </div>
 
 ### Timers Operation
@@ -158,14 +171,6 @@ When the page is full, a button press will discard the oldest timer and start a 
 <img src="doc/18.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-### Home Assistant
-
-Create your own customisations for Home Assistant integration. See [documentation](https://esphome.io/components/api.html)
-
-<div>
-<img src="doc/19.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-</div>
-
 ### Weather Faces
 
 These are useful for wall-mounting older/spare Watchy modules:
@@ -191,7 +196,7 @@ vCard, Website and RSS URL can be set in `secrets.yaml`.
 
 ## Installation Notes
 
-### Fonts
+### Updating or Changing the Fonts
 
 Download and save `Futura Bold.otf` from:
 
@@ -293,5 +298,5 @@ Captive Portal could be enabled to generate a reusable firmware binary and set w
 - Auto-sleep could be delayed longer if wifi is already disabled
 - Preset count-down timers
 - Enable/disable hourly alarms on the watch
+- [Metric time](https://en.wikipedia.org/wiki/Metric_time)
 - Change time-zone on watch when travelling
-- Menus using the [ESPHome menu system](https://esphome.io/components/display_menu/graphical_display_menu.html) and [here](https://esphome.io/components/display_menu/)

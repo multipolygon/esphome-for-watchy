@@ -8,7 +8,7 @@ substitutions:
   <<: !include mdi.yaml
   ID: "1"
   NAME: watchy-v$VERSION-id$ID
-  FACE_COUNT: "7"
+  FACE_COUNT: "8"
   MODE_FACES: "0"
   MODE_TIMERS: "1"
   MODE_MENU: "2"
@@ -195,6 +195,9 @@ display:
                 id(power_saving_mode) ? 0 : ((activeTimer / 60) % 60)
               );
             }
+          } else {
+            const float metricTime = ((float(now.hour) * 60.0 * 60.0 + float(now.minute) * 60.0 + float(now.second)) / 86400.0) * 10000.0;
+            it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER, "%.0f", metricTime);
           }
 
         } else if (id(face) == FACE_HANDS_ARABIC || id(face) == FACE_HANDS_ARABIC_SMALL || id(face) == FACE_HANDS_ROMAN || id(face) == FACE_HANDS_ROMAN_SMALL) {
@@ -454,25 +457,32 @@ display:
       }
 
 graphical_display_menu:
+  # https://esphome.io/components/display_menu/
   id: settings_menu
   active: true
   mode: rotary
   font: small_font
   items:
     - type: switch
-      text: Alarm A Enable
+      text: Alarm A
       switch: alarm_a_enable
     - type: number
-      text: Alarm A Hour
+      text: Alarm A
       number: alarm_a_hour
-      format: "%2.0f"
+      value_lambda: return (String(int(id(alarm_a_hour).state)) + ":00").c_str();
+      on_value:
+        then:
+          lambda: id(alarm_a_enable).turn_on();
     - type: switch
-      text: Alarm B Enable
+      text: Alarm B
       switch: alarm_b_enable
     - type: number
-      text: Alarm B Hour
+      text: Alarm B
       number: alarm_b_hour
-      format: "%2.0f"
+      value_lambda: return (String(int(id(alarm_b_hour).state)) + ":00").c_str();
+      on_value:
+        then:
+          lambda: id(alarm_b_enable).turn_on();
 
 binary_sensor:
   # https://esphome.io/components/binary_sensor
@@ -628,7 +638,7 @@ binary_sensor:
             if (id(mode) == $MODE_MENU) {
               id(settings_menu).up();
             } else if (id(mode) == $MODE_FACES) {
-              id(face) = (id(face) + 1) % ($FACE_COUNT + 1);
+              id(face) = (id(face) + 1) % $FACE_COUNT;
             } else if (id(mode) == $MODE_QR) {
               id(qr_mode) = (id(qr_mode) + 1) % 3;
             } else {
@@ -748,8 +758,12 @@ script:
                   });
 
                   id(updating_weather) = false;
+
+                  if (id(mode) == $MODE_FACES) {
+                    id(epaper).do_full_update();
+                  }
+
               - delay: 10ms ## Adding a delay because epaper updates are glitchy after weather response
-              - lambda: id(epaper).do_full_update();
               - component.update: epaper
               - delay: 100ms
               - script.execute: go_to_sleep
@@ -768,6 +782,9 @@ script:
                 - lambda: |-
                     id(keep_awake) = false;
                     id(alarm_buzzing) = false;
+                    if (id(mode) == $MODE_MENU) {
+                      id(mode) = $MODE_FACES;
+                    }
                 - wifi.disable:
                 - switch.turn_off: buzzer
                 - component.update: epaper
@@ -816,10 +833,11 @@ time:
               id(sleep_timeout) += 1;
               id(epaper).update();
               id(go_to_sleep).execute();
-      - seconds: /10
+      - seconds: /5
         then:
           - lambda: |-
-              if (id(alarm_buzzing)) {
+              // Alarm will buzz for 2 minutes if not silenced:
+              if (id(alarm_buzzing) && id(sleep_timeout) <= 2) {
                 id(buzzer).turn_on();
               }
           - delay: 1s
