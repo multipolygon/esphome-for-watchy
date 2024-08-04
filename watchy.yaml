@@ -1,4 +1,4 @@
-## Watchy ##
+## ESPHome for Watchy ##
 # https://watchy.sqfmi.com/docs/hardware
 
 substitutions:
@@ -6,14 +6,12 @@ substitutions:
   <<: !include config.yaml
   <<: !include pins-v3.yaml
   <<: !include mdi.yaml
-  #### PARAMS ####
   ID: "1"
   NAME: watchy-v$VERSION-id$ID
-  #### FACES AND MODES ####
   FACE_COUNT: "7"
   MODE_FACES: "0"
   MODE_TIMERS: "1"
-  MODE_HA: "2"
+  MODE_MENU: "2"
   MODE_QR: "3"
 
 logger:
@@ -36,15 +34,18 @@ esphome:
           const auto now = id(ntp).now();
           const auto utcnow = id(ntp).utcnow();
 
-          if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_TIMER) {
+          id(alarm_buzzing) =
+            (now.minute == 0 || id(power_saving_mode)) && (
+              id(alarm_a_enable).state && int(id(alarm_a_hour).state) == now.hour ||
+              id(alarm_b_enable).state && int(id(alarm_b_hour).state) == now.hour
+            );
+
+          if (id(alarm_buzzing) || esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_TIMER) {
             id(keep_awake) = true;
           }
 
           if (!id(power_saving_mode)) {
-            id(chime) = (now.hour ==  8 && now.minute == 0)
-                     || (now.hour == 12 && now.minute == 0)
-                     || (now.hour == 16 && now.minute == 0)
-                     ;
+            id(chime) = now.minute == 0 && (now.hour == 8 || now.hour == 12 || now.hour == 16);
 
             if ((utcnow.hour % 3 == 0 && utcnow.minute == 0) || esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED) {
               id(updating_weather) = true;
@@ -57,16 +58,17 @@ esphome:
             }
           }
 
-      - if:
-          condition:
-            lambda: return id(keep_awake) || id(chime);
-          then:
-            - switch.turn_on: buzzer
-            - component.update: glass
-            - switch.turn_off: buzzer
-          else:
-            - component.update: glass
-      - script.execute: go_to_sleep
+          if (id(keep_awake) || id(alarm_buzzing) || id(chime)) {
+            id(buzzer).turn_on();
+          }
+
+          if (id(mode) == $MODE_MENU) {
+            id(mode) = $MODE_FACES;
+          }
+
+          id(epaper).update();
+          id(buzzer).turn_off();
+          id(go_to_sleep).execute();
 
 display:
   # Configuration for the display
@@ -74,7 +76,7 @@ display:
   # https://esphome.io/components/display/waveshare_epaper.html
   # https://www.good-display.com/product/206.html
   # https://www.e-paper-display.com/products_detail/productId=455.html
-  - id: glass
+  - id: epaper
     platform: waveshare_epaper
     model: 1.54inv2
     cs_pin: $DISPLAY_CS_PIN
@@ -116,7 +118,11 @@ display:
         )
       );
 
-      const char *chimeIcon = id(chime) ? mdiBellRingOutline : "";
+      const char *alarmIcon =
+        id(alarm_buzzing) ? mdiBellRingOutline :
+        id(chime) ? mdiBellOutline :
+        (id(alarm_a_enable).state || id(alarm_b_enable).state) ? mdiAlarmCheck :
+        "";
 
       const char *calendarIcon = "";
       if (
@@ -170,7 +176,7 @@ display:
           );
 
           // Status Icons //
-          it.printf(w/2, h/2+46, id(mdi_small), TextAlign::CENTER, "%s%s%s", chimeIcon, wifiIcon, batteryIcon);
+          it.printf(w/2, h/2+46, id(mdi_small), TextAlign::CENTER, "%s%s%s", alarmIcon, wifiIcon, batteryIcon);
 
           // Active Timer //
           if (id(timers)[id(active_timer)] != 0) {
@@ -267,7 +273,7 @@ display:
           }
 
           // Status Icons //
-          it.printf(w*1/4, h/2, id(mdi_small), TextAlign::CENTER, "%s%s", chimeIcon, wifiIcon);
+          it.printf(w*1/4, h/2, id(mdi_small), TextAlign::CENTER, "%s%s", alarmIcon, wifiIcon);
           it.printf(w*3/4, h/2, id(mdi_small), TextAlign::CENTER, "%s", batteryIcon);
 
         } else if (id(face) == FACE_INFO_DEBUG) {
@@ -414,21 +420,9 @@ display:
         // Wifi status //
         it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT, "%s", wifiIcon);
 
-      } else if (id(mode) == $MODE_HA) {
-        it.print(0, 0, id(mdi_small), TextAlign::TOP_LEFT, mdiHomeAssistant);
+      } else if (id(mode) == $MODE_MENU) {
 
-        int l = 0;
-        const int lh = 34;
-        const int lo = 38;
-
-        it.printf(w/2, l, id(date_font), TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
-        l += lh * 1.5;
-
-        it.print(0, l, id(small_font), TextAlign::CENTER_LEFT, "Add your code here.");
-        l += lh;
-
-        // Wifi status //
-        it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT, "%s", wifiIcon);
+        it.menu(0, 0, id(settings_menu), w, h);
 
       } else if (id(mode) >= 1000) {
         id(mode) = id(mode) - 1000;
@@ -459,6 +453,27 @@ display:
         it.qr_code(x, y, qr, Color(255,255,255), scale);
       }
 
+graphical_display_menu:
+  id: settings_menu
+  active: true
+  mode: rotary
+  font: small_font
+  items:
+    - type: switch
+      text: Alarm A Enable
+      switch: alarm_a_enable
+    - type: number
+      text: Alarm A Hour
+      number: alarm_a_hour
+      format: "%2.0f"
+    - type: switch
+      text: Alarm B Enable
+      switch: alarm_b_enable
+    - type: number
+      text: Alarm B Hour
+      number: alarm_b_hour
+      format: "%2.0f"
+
 binary_sensor:
   # https://esphome.io/components/binary_sensor
   # https://esphome.io/components/binary_sensor/gpio
@@ -473,19 +488,39 @@ binary_sensor:
     platform: gpio
     on_click:
       min_length: 0ms
-      max_length: 1s
+      max_length: 2s
       then:
         - lambda: |-
             id(keep_awake) = true;
             id(sleep_timeout) = 0;
-            if (id(wifi_id).is_disabled()) {
+            if (id(alarm_buzzing)) {
+              id(alarm_buzzing) = false;
+              id(buzzer).turn_off();
+            } else if (id(mode) != $MODE_FACES) {
+              id(mode) = $MODE_FACES;
+            } else if (id(wifi_id).is_disabled()) {
               id(power_saving_mode) = false;
               id(updating_weather) = true;
               id(wifi_id).enable();
             } else {
-              id(glass).do_full_update();
+              id(epaper).do_full_update();
             }
-            id(glass).update();
+            id(epaper).update();
+
+  - id: full_epaper_refresh_button
+    pin:
+      number: $BUTTON_LEFT_TOP_PIN
+      allow_other_uses: true
+      inverted: $BUTTON_PIN_INVERTED
+    platform: gpio
+    filters:
+      delayed_on: 3s
+    on_press:
+      - lambda: |-
+          id(keep_awake) = true;
+          id(sleep_timeout) = 0;
+          id(epaper).do_full_update();
+          id(epaper).update();
 
   - id: power_saving_mode_button
     pin:
@@ -494,16 +529,17 @@ binary_sensor:
       inverted: $BUTTON_PIN_INVERTED
     platform: gpio
     filters:
-      delayed_on: 2s
+      delayed_on: 5s
     on_press:
       - lambda: |-
-          id(power_saving_mode) = true;
-          id(keep_awake) = false;
-          id(updating_weather) = false;
-      - wifi.disable:
-      - delay: 10ms
-      - component.update: glass
-      - script.execute: go_to_sleep
+          if (id(mode) == $MODE_FACES) {
+            id(power_saving_mode) = true;
+            id(keep_awake) = false;
+            id(updating_weather) = false;
+            id(wifi_id).disable();
+            id(epaper).update();
+            id(go_to_sleep).execute();
+          }
 
   ## Left Bottom ##
 
@@ -515,36 +551,22 @@ binary_sensor:
     platform: gpio
     on_click:
       min_length: 0ms
-      max_length: 1s
+      max_length: 2s
       then:
         - lambda: |-
             id(keep_awake) = true;
             id(sleep_timeout) = 0;
-            id(mode) = $MODE_TIMERS;
-            id(active_timer) = (id(active_timer) + 1) % 5;
-            id(timers)[id(active_timer)] = id(ntp).utcnow().timestamp;
-        - component.update: glass
+            if (id(mode) == $MODE_MENU) {
+              id(settings_menu).enter();
+            } else if (id(mode) == $MODE_TIMERS) {
+              id(active_timer) = (id(active_timer) + 1) % 5;
+              id(timers)[id(active_timer)] = id(ntp).utcnow().timestamp;
+            } else {
+              id(mode) = $MODE_TIMERS;
+            }
+            id(epaper).update();
 
   - id: cancel_active_timer_button
-    pin:
-      number: $BUTTON_LEFT_BOTTOM_PIN
-      allow_other_uses: true
-      inverted: $BUTTON_PIN_INVERTED
-    platform: gpio
-    filters:
-      delayed_on: 2s
-    on_press:
-      - lambda: |-
-          id(keep_awake) = true;
-          id(sleep_timeout) = 0;
-          id(mode) = $MODE_TIMERS;
-          id(timers)[id(active_timer)] = 0;
-          if (id(active_timer) != 0) {
-            id(active_timer) -= 1;
-          }
-      - component.update: glass
-
-  - id: clear_all_timers_button
     pin:
       number: $BUTTON_LEFT_BOTTOM_PIN
       allow_other_uses: true
@@ -556,14 +578,37 @@ binary_sensor:
       - lambda: |-
           id(keep_awake) = true;
           id(sleep_timeout) = 0;
-          id(mode) = $MODE_TIMERS;
-          id(active_timer) = 0;
-          id(timers)[0] = 0;
-          id(timers)[1] = 0;
-          id(timers)[2] = 0;
-          id(timers)[3] = 0;
-          id(timers)[4] = 0;
-      - component.update: glass
+          if (id(mode) == $MODE_TIMERS) {
+            id(mode) = $MODE_TIMERS;
+            id(timers)[id(active_timer)] = 0;
+            if (id(active_timer) != 0) {
+              id(active_timer) -= 1;
+            }
+            id(epaper).update();
+          }
+
+  - id: clear_all_timers_button
+    pin:
+      number: $BUTTON_LEFT_BOTTOM_PIN
+      allow_other_uses: true
+      inverted: $BUTTON_PIN_INVERTED
+    platform: gpio
+    filters:
+      delayed_on: 5s
+    on_press:
+      - lambda: |-
+          id(keep_awake) = true;
+          id(sleep_timeout) = 0;
+          if (id(mode) == $MODE_TIMERS) {
+            id(mode) = $MODE_TIMERS;
+            id(active_timer) = 0;
+            id(timers)[0] = 0;
+            id(timers)[1] = 0;
+            id(timers)[2] = 0;
+            id(timers)[3] = 0;
+            id(timers)[4] = 0;
+            id(epaper).update();
+          }
 
   ## Right Top ##
 
@@ -575,70 +620,62 @@ binary_sensor:
     platform: gpio
     on_click:
       min_length: 0ms
-      max_length: 1s
+      max_length: 2s
       then:
         - lambda: |-
             id(keep_awake) = true;
             id(sleep_timeout) = 0;
-            if (id(mode) == $MODE_FACES) {
+            if (id(mode) == $MODE_MENU) {
+              id(settings_menu).up();
+            } else if (id(mode) == $MODE_FACES) {
               id(face) = (id(face) + 1) % ($FACE_COUNT + 1);
+            } else if (id(mode) == $MODE_QR) {
+              id(qr_mode) = (id(qr_mode) + 1) % 3;
             } else {
               id(mode) = $MODE_FACES;
             }
-            id(glass).update();
+            id(epaper).update();
 
-  - id: epaper_display_clean_refresh_button
+  - id: qr_codes_mode_button
     pin:
       number: $BUTTON_RIGHT_TOP_PIN
       allow_other_uses: true
       inverted: $BUTTON_PIN_INVERTED
     platform: gpio
     filters:
-      delayed_on: 2s
+      delayed_on: 3s
     on_press:
       - lambda: |-
           id(keep_awake) = true;
           id(sleep_timeout) = 0;
-          // ePaper full wipe clean:
-          id(glass).do_full_update();
-          id(glass).update();
+          if (id(mode) == $MODE_FACES) {
+            id(mode) = $MODE_QR;
+            id(epaper).update();
+          } else {
+            id(mode) = $MODE_FACES;
+          }
 
   ## Right Bottom ##
 
-  - id: ha_qr_mode_button
+  - id: menu_mode_button
     pin:
       number: $BUTTON_RIGHT_BOTTOM_PIN
-      allow_other_uses: true
+      allow_other_uses: false
       inverted: $BUTTON_PIN_INVERTED
     platform: gpio
     on_click:
       min_length: 0ms
-      max_length: 1s
+      max_length: 2s
       then:
         - lambda: |-
             id(keep_awake) = true;
             id(sleep_timeout) = 0;
-            if (id(mode) == $MODE_QR) {
-              id(qr_mode) = (id(qr_mode) + 1) % 3;
+            if (id(mode) == $MODE_MENU) {
+              id(settings_menu).down();
             } else {
-              id(mode) = $MODE_HA;
+              id(mode) = $MODE_MENU;
             }
-        - component.update: glass
-
-  - id: qr_codes_mode_button
-    pin:
-      number: $BUTTON_RIGHT_BOTTOM_PIN
-      allow_other_uses: true
-      inverted: $BUTTON_PIN_INVERTED
-    platform: gpio
-    filters:
-      delayed_on: 2s
-    on_press:
-      - lambda: |-
-          id(keep_awake) = true;
-          id(sleep_timeout) = 0;
-          id(mode) = $MODE_QR;
-      - component.update: glass
+            id(epaper).update();
 
   ## Charging ##
 
@@ -649,7 +686,7 @@ binary_sensor:
       # inverted: true
     platform: gpio
     on_state:
-      component.update: glass
+      component.update: epaper
 
 wifi:
   # https://esphome.io/components/wifi.html
@@ -663,7 +700,7 @@ wifi:
   reboot_timeout: 0s
   on_connect:
     - delay: 100ms
-    - component.update: glass
+    - component.update: epaper
     - component.update: ntp
     - script.execute: update_weather
 
@@ -712,8 +749,8 @@ script:
 
                   id(updating_weather) = false;
               - delay: 10ms ## Adding a delay because epaper updates are glitchy after weather response
-              - lambda: id(glass).do_full_update();
-              - component.update: glass
+              - lambda: id(epaper).do_full_update();
+              - component.update: epaper
               - delay: 100ms
               - script.execute: go_to_sleep
 
@@ -728,9 +765,12 @@ script:
               condition:
                 lambda: return id(sleep_timeout) > 5;
               then:
-                - lambda: id(keep_awake) = false;
+                - lambda: |-
+                    id(keep_awake) = false;
+                    id(alarm_buzzing) = false;
                 - wifi.disable:
-                - component.update: glass
+                - switch.turn_off: buzzer
+                - component.update: epaper
                 - deep_sleep.enter: &deep_sleep_duration
                     sleep_duration: !lambda |-
                       const auto now = id(ntp).now();
@@ -744,8 +784,9 @@ script:
               condition:
                 lambda: return !id(updating_weather) || id(sleep_timeout) > 3;
               then:
-                deep_sleep.enter:
-                  <<: *deep_sleep_duration
+                - switch.turn_off: buzzer
+                - deep_sleep.enter:
+                    <<: *deep_sleep_duration
 
 time:
   # https://esphome.io/components/time/index.html
@@ -766,14 +807,23 @@ time:
           - lambda: "return id(ntp).now().is_valid();"
         then:
           # - pcf8563.write_time: # Only for Watchy v2
-          - component.update: glass
+          - component.update: epaper
     on_time:
       # https://esphome.io/components/time/index.html#time-on-time
       - seconds: 0
         then:
-          - lambda: id(sleep_timeout) += 1;
-          - component.update: glass
-          - script.execute: go_to_sleep
+          - lambda: |-
+              id(sleep_timeout) += 1;
+              id(epaper).update();
+              id(go_to_sleep).execute();
+      - seconds: /10
+        then:
+          - lambda: |-
+              if (id(alarm_buzzing)) {
+                id(buzzer).turn_on();
+              }
+          - delay: 1s
+          - switch.turn_off: buzzer
 
   ## https://esphome.io/components/time/pcf8563.html
   # - platform: pcf8563 # Only for Watchy v2
@@ -802,6 +852,9 @@ globals:
     type: boolean
     initial_value: "false"
   - id: chime
+    type: boolean
+    initial_value: "false"
+  - id: alarm_buzzing
     type: boolean
     initial_value: "false"
   ## Persistent ##
@@ -876,12 +929,14 @@ font:
     glyphs:
       # See ./mdi.yaml
       - "$mdiAccountBox"
+      - "$mdiAlarmCheck"
       - "$mdiBatteryChargingHigh"
       - "$mdiBatteryHigh"
       - "$mdiBatteryLow"
       - "$mdiBatteryMedium"
       - "$mdiBatteryOutline"
       - "$mdiBatteryRemoveOutline"
+      - "$mdiBellOutline"
       - "$mdiBellRingOutline"
       - "$mdiEmoticonHappyOutline"
       - "$mdiHomeAssistant"
@@ -1016,6 +1071,30 @@ switch:
   - platform: gpio
     id: buzzer
     pin: $VIB_MOTOR_PIN
+
+  - &alarm_enable
+    platform: template
+    id: alarm_a_enable
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - <<: *alarm_enable
+    id: alarm_b_enable
+
+number:
+  # https://esphome.io/components/number/template.html
+  - &alarm_hour
+    platform: template
+    id: alarm_a_hour
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    initial_value: 12
+    max_value: 23
+    step: 1
+
+  - <<: *alarm_hour
+    id: alarm_b_hour
 
 i2c:
   # https://esphome.io/components/i2c.html

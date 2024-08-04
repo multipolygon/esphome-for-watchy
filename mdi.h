@@ -1,5 +1,6 @@
 const char *mdiAccountBox = "\U000F0006";
 const char *mdiAirballoon = "\U000F001C";
+const char *mdiAlarmCheck = "\U000F0021";
 const char *mdiAlert = "\U000F0026";
 const char *mdiBatteryChargingHigh = "\U000F12A6";
 const char *mdiBatteryHigh = "\U000F12A3";
@@ -8,6 +9,7 @@ const char *mdiBatteryMedium = "\U000F12A2";
 const char *mdiBatteryOutline = "\U000F008E";
 const char *mdiBatteryRemoveOutline = "\U000F17E9";
 const char *mdiBee = "\U000F0FA1";
+const char *mdiBellOutline = "\U000F009C";
 const char *mdiBellRingOutline = "\U000F009F";
 const char *mdiBicycle = "\U000F109C";
 const char *mdiBird = "\U000F15C6";

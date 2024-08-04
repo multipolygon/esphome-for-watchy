@@ -4,7 +4,7 @@ Main source code file is: [./watchy.yaml](./watchy.yaml)
 
 [Watchy](https://watchy.sqfmi.com/) is an [open-hardware](https://watchy.sqfmi.com/docs/hardware), ESP32 wrist watch with e-paper display designed by SQFMI.
 
-This project is a complete working firmware, built upon [ESPHome](https://esphome.io/), with [single-file source-code](./watchy.yaml), full v3 hardware support, weather forecast, multiple faces, [beautiful pixel-art MDI icons](https://pictogrammers.com/library/mdi/), stop-watch timers, low-power-mode, firmware updatable over wifi and easy Home Assistant customisation. It is a complete, self-contained, drop-in replacement for the original Watchy firmware.
+This project is a complete working firmware, built upon [ESPHome](https://esphome.io/), with [single-file source-code](./watchy.yaml), full v3 hardware support, weather forecast, multiple faces, [beautiful pixel-art MDI icons](https://pictogrammers.com/library/mdi/), 2x alarms, stop-watch timers, low-power-mode, firmware updatable over wifi and easy Home Assistant customisation. It is a complete, self-contained, drop-in replacement for the original Watchy firmware.
 
 ## Faces
 
@@ -83,34 +83,44 @@ Multiple buttons and long-press buttons remain free for your own extensions.
 
 Intentionally, this project does not include any on-watch user settings screens or user configuration. The idea is that the ESPHome YAML file is simple and easy enough for it to be edited directly, and re-flashed to the ESP32 device. **The YAML _is_ the settings UI and the main feature of an open-source, programmable, WiFi watch is that it is easily reprogrammable over WiFi.**
 
-## User Manual
+## User Guide
 
 ### Buttons
 
-<img src="doc/buttons.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<!-- <img src="doc/buttons.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" /> -->
 
-#### Top Left
+#### Upper Left
 
-- Press: Power On
-- 2nd Press: Wifi On
-- Long Press (2s): Set power-saving mode and go to sleep
+- Press: Power On / Silence Alarm
+- 2nd Press: Home / Wifi On / ePaper Refresh
+- Long Press (3s): ePaper Refresh
+- Long Press (5s): Set power-saving mode and go to sleep
 
-#### Top Right
+#### Upper Right
 
-- Press: Cycle watch faces (digital, hands, roman, info, etc)
-- Long Press (2s): ePaper full-refresh (this clears away ghost pixels)
+- Press: Cycle watch faces (digital, hands, roman, info, etc) or QR Codes
+- Long Press (3s): Toggle QR Codes mode
 
-#### Bottom Left
+#### Lower Left
 
-- Press: Start new timer (and show timers page) (up to 5 timers)
-- Long Press (2s): Cancel last active timer
-- Long Press (3s): Clear all tiemrs
+- Press: Show Timers
+- 2nd Press: Start a new timer (up to 5 timers)
+- Long Press (3s): Cancel last active timer
+- Long Press (5s): Clear all timers
 
-#### Bottom Right
+#### Lower Right
 
-- Press: Show Home Assistant page (intentionally left unused for custom features)
-- Long Press (2s): Show QR Codes
-  - Press (in QR mode): Cycle QR codes
+- Press: Settings Menu
+
+When in Settings Menu mode:
+
+- Menu Up: Upper-Right Button
+- Menu Down: Lower-Right Button
+- Menu Select/Save: Lower-Left Button
+
+<div>
+<img src="doc/menu.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
 
 ### Weather
 
@@ -123,28 +133,29 @@ The watch shows a weather forecast over the upcoming 12 hours. This is a simple,
 
 ### Timers Operation
 
-Press the left-bottom button to show the timers page:
+1. Press the lower-left button to show the timers page
+1. Press again to start a new timer, added to the bottom (D)
+1. Press again for another timer (E)
+1. Press-and-hold (3s) to cancel last timer
+1. Press-and-hold (5s) to clear all timers and start over
 
-<img src="doc/11.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<div>
+<img src="doc/11.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/12.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/14.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/15.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
+</div>
 
-Press the left-bottom button again to start a new timer, added to the bottom (D):
+The most recent active timer will also show on the digital clock face:
 
-<img src="doc/12.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-
-Press again for another timer (E):
-
-<img src="doc/14.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-
-Press-and-hold (2s) the left-bottom button to clear all timers and start over:
-
-<img src="doc/15.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/active-timer.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
 
 When the page is full, a button press will discard the oldest timer and start a new one at the bottom. All the other timers move up one slot, maintaining their letter-codes. In this example, A, which has been restarted, moves to the bottom. Then, on another press, B.
 
 <div>
-<img src="doc/16.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/17.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/18.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/16.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/17.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/18.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
 </div>
 
 ### Home Assistant
@@ -283,3 +294,4 @@ Captive Portal could be enabled to generate a reusable firmware binary and set w
 - Preset count-down timers
 - Enable/disable hourly alarms on the watch
 - Change time-zone on watch when travelling
+- Menus using the [ESPHome menu system](https://esphome.io/components/display_menu/graphical_display_menu.html) and [here](https://esphome.io/components/display_menu/)
