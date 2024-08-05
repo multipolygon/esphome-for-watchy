@@ -198,10 +198,10 @@ display:
                 (activeTimer % (24*60*60)) / (60*60),
                 id(power_saving_mode).state ? 0 : ((activeTimer / 60) % 60)
               );
-            } else {
-              const float metricTime = ((float(now.hour) * 60.0 * 60.0 + float(now.minute) * 60.0 + float(now.second)) / 86400.0) * 10000.0;
-              it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER, "%.0f", metricTime);
             }
+          } else {
+            const float metricTime = ((float(now.hour) * 60.0 * 60.0 + float(now.minute) * 60.0 + float(now.second)) / 86400.0) * 10000.0;
+            it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER, "%.0f", metricTime);
           }
 
         } else if (
