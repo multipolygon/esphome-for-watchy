@@ -214,9 +214,15 @@ display:
         )
         {
 
-          const bool n = id(face) == FACE_HANDS_ARABIC || id(face) == FACE_HANDS_ARABIC_SMALL || id(face) == FACE_HANDS_24_HOUR || id(face) == FACE_HANDS_24_HOUR_SMALL;
-          const bool s = id(face) == FACE_HANDS_ARABIC_SMALL || id(face) == FACE_HANDS_ROMAN_SMALL || id(face) == FACE_HANDS_24_HOUR_SMALL;
-          const bool hr24 = id(face) == FACE_HANDS_24_HOUR || id(face) == FACE_HANDS_24_HOUR_SMALL;
+          const bool n = id(face) == FACE_HANDS_ARABIC ||
+                         id(face) == FACE_HANDS_ARABIC_SMALL ||
+                         id(face) == FACE_HANDS_24_HOUR ||
+                         id(face) == FACE_HANDS_24_HOUR_SMALL;
+          const bool s = id(face) == FACE_HANDS_ARABIC_SMALL ||
+                         id(face) == FACE_HANDS_ROMAN_SMALL ||
+                         id(face) == FACE_HANDS_24_HOUR_SMALL;
+          const bool hr24 = id(face) == FACE_HANDS_24_HOUR ||
+                            id(face) == FACE_HANDS_24_HOUR_SMALL;
 
           // Center Dot //
           it.filled_circle(w/2, w/2, 5);
