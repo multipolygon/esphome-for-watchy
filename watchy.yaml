@@ -8,7 +8,8 @@ substitutions:
   <<: !include mdi.yaml
   ID: "1"
   NAME: watchy-v$VERSION-id$ID
-  FACE_COUNT: "8"
+  #### FACES AND MODES ####
+  FACE_COUNT: "9"
   MODE_FACES: "0"
   MODE_TIMERS: "1"
   MODE_MENU: "2"
@@ -146,9 +147,11 @@ display:
         const int FACE_HANDS_ARABIC_SMALL = 2;
         const int FACE_HANDS_ROMAN = 3;
         const int FACE_HANDS_ROMAN_SMALL = 4;
-        const int FACE_HUGE_WEATHER_ICON = 5;
-        const int FACE_QUAD_WEATHER_ICONS = 6;
-        const int FACE_INFO_DEBUG = 7;
+        const int FACE_HANDS_24_HOUR = 5;
+        const int FACE_HANDS_24_HOUR_SMALL = 6;
+        const int FACE_HUGE_WEATHER_ICON = 7;
+        const int FACE_QUAD_WEATHER_ICONS = 8;
+        const int FACE_INFO_DEBUG = 9;
 
         if (id(face) == FACE_DIGITAL) {
 
@@ -196,35 +199,75 @@ display:
                 id(power_saving_mode).state ? 0 : ((activeTimer / 60) % 60)
               );
             }
-          } else {
-            const float metricTime = ((float(now.hour) * 60.0 * 60.0 + float(now.minute) * 60.0 + float(now.second)) / 86400.0) * 10000.0;
-            it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER, "%.0f", metricTime);
           }
 
-        } else if (id(face) == FACE_HANDS_ARABIC || id(face) == FACE_HANDS_ARABIC_SMALL || id(face) == FACE_HANDS_ROMAN || id(face) == FACE_HANDS_ROMAN_SMALL) {
+        } else if (
+          id(face) == FACE_HANDS_ARABIC ||
+          id(face) == FACE_HANDS_ARABIC_SMALL ||
+          id(face) == FACE_HANDS_ROMAN ||
+          id(face) == FACE_HANDS_ROMAN_SMALL ||
+          id(face) == FACE_HANDS_24_HOUR ||
+          id(face) == FACE_HANDS_24_HOUR_SMALL
+        )
+        {
 
-          const bool n = id(face) == FACE_HANDS_ARABIC || id(face) == FACE_HANDS_ARABIC_SMALL;
-          const bool s = id(face) == FACE_HANDS_ARABIC_SMALL || id(face) == FACE_HANDS_ROMAN_SMALL;
+          const bool n = id(face) == FACE_HANDS_ARABIC || id(face) == FACE_HANDS_ARABIC_SMALL || id(face) == FACE_HANDS_24_HOUR || id(face) == FACE_HANDS_24_HOUR_SMALL;
+          const bool s = id(face) == FACE_HANDS_ARABIC_SMALL || id(face) == FACE_HANDS_ROMAN_SMALL || id(face) == FACE_HANDS_24_HOUR_SMALL;
+          const bool hr24 = id(face) == FACE_HANDS_24_HOUR || id(face) == FACE_HANDS_24_HOUR_SMALL;
 
           // Center Dot //
           it.filled_circle(w/2, w/2, 5);
 
           // Big Marks //
           const auto bigFont = s ? id(small_font) : id(date_font);
-          it.print(w, h/2, bigFont, TextAlign::CENTER_RIGHT, n ? "3" : "III");
-          it.print(w/2, h+(s ? 0 : 6), bigFont, TextAlign::BOTTOM_CENTER, n ? "6" : "VI");
-          it.print(0, h/2, bigFont, TextAlign::CENTER_LEFT, n ? "9" : "IX");
-          it.print(w/2, 0-(s ? 0 : 8), bigFont, TextAlign::TOP_CENTER, n ? "12" : "XII");
+
+          if (hr24) {
+            it.print(w, h/2, bigFont, TextAlign::CENTER_RIGHT, n ? "18" : "XVIII");
+            it.print(w/2, h+(s ? 0 : 6), bigFont, TextAlign::BOTTOM_CENTER, n ? "0" : "O");
+            it.print(0, h/2, bigFont, TextAlign::CENTER_LEFT, n ? "6" : "VI");
+            it.print(w/2, 0-(s ? 0 : 8), bigFont, TextAlign::TOP_CENTER, n ? "12" : "XII");
+          } else {
+            it.print(w, h/2, bigFont, TextAlign::CENTER_RIGHT, n ? "3" : "III");
+            it.print(w/2, h+(s ? 0 : 6), bigFont, TextAlign::BOTTOM_CENTER, n ? "6" : "VI");
+            it.print(0, h/2, bigFont, TextAlign::CENTER_LEFT, n ? "9" : "IX");
+            it.print(w/2, 0-(s ? 0 : 8), bigFont, TextAlign::TOP_CENTER, n ? "12" : "XII");
+          }
 
           // Small Marks //
-          it.print(getClkX(1), getClkY(1), id(small_font), TextAlign::CENTER, s ? "." : n ? "1" : "I");
-          it.print(getClkX(2), getClkY(2), id(small_font), TextAlign::CENTER, s ? "." : n ? "2" : "II");
-          it.print(getClkX(4), getClkY(4), id(small_font), TextAlign::CENTER, s ? "." : n ? "4" : "IV");
-          it.print(getClkX(5), getClkY(5), id(small_font), TextAlign::CENTER, s ? "." : n ? "5" : "V");
-          it.print(getClkX(7), getClkY(7), id(small_font), TextAlign::CENTER, s ? "." : n ? "7" : "VII");
-          it.print(getClkX(8), getClkY(8), id(small_font), TextAlign::CENTER, s ? "." : n ? "8" : "VIII");
-          it.print(getClkX(10), getClkY(10), id(small_font), TextAlign::CENTER, s ? "." : n ? "10" : "X");
-          it.print(getClkX(11), getClkY(11), id(small_font), TextAlign::CENTER, s ? "." : n ? "11" : "XI");
+          if (hr24) {
+            it.print(getClkX24(1), getClkY24(1), id(small_font), TextAlign::CENTER, s ? "." : "1");
+            it.print(getClkX24(2), getClkY24(2), id(small_font), TextAlign::CENTER, s ? "." : "2");
+            it.print(getClkX24(3), getClkY24(3), id(small_font), TextAlign::CENTER, s ? "." : "3");
+            it.print(getClkX24(4), getClkY24(4), id(small_font), TextAlign::CENTER, s ? "." : "4");
+            it.print(getClkX24(5), getClkY24(5), id(small_font), TextAlign::CENTER, s ? "." : "5");
+
+            it.print(getClkX24(7), getClkY24(7), id(small_font), TextAlign::CENTER, s ? "." : "7");
+            it.print(getClkX24(8), getClkY24(8), id(small_font), TextAlign::CENTER, s ? "." : "8");
+            it.print(getClkX24(9), getClkY24(9), id(small_font), TextAlign::CENTER, s ? "." : "9");
+            it.print(getClkX24(10), getClkY24(10), id(small_font), TextAlign::CENTER, s ? "." : "10");
+            it.print(getClkX24(11), getClkY24(11), id(small_font), TextAlign::CENTER, s ? "." : "11");
+
+            it.print(getClkX24(13), getClkY24(13), id(small_font), TextAlign::CENTER, s ? "." : "13");
+            it.print(getClkX24(14), getClkY24(14), id(small_font), TextAlign::CENTER, s ? "." : "14");
+            it.print(getClkX24(15), getClkY24(15), id(small_font), TextAlign::CENTER, s ? "." : "15");
+            it.print(getClkX24(16), getClkY24(16), id(small_font), TextAlign::CENTER, s ? "." : "16");
+            it.print(getClkX24(17), getClkY24(17), id(small_font), TextAlign::CENTER, s ? "." : "17");
+
+            it.print(getClkX24(19), getClkY24(19), id(small_font), TextAlign::CENTER, s ? "." : "19");
+            it.print(getClkX24(20), getClkY24(20), id(small_font), TextAlign::CENTER, s ? "." : "20");
+            it.print(getClkX24(21), getClkY24(21), id(small_font), TextAlign::CENTER, s ? "." : "21");
+            it.print(getClkX24(22), getClkY24(22), id(small_font), TextAlign::CENTER, s ? "." : "22");
+            it.print(getClkX24(23), getClkY24(23), id(small_font), TextAlign::CENTER, s ? "." : "23");
+          } else {
+            it.print(getClkX(1), getClkY(1), id(small_font), TextAlign::CENTER, s ? "." : n ? "1" : "I");
+            it.print(getClkX(2), getClkY(2), id(small_font), TextAlign::CENTER, s ? "." : n ? "2" : "II");
+            it.print(getClkX(4), getClkY(4), id(small_font), TextAlign::CENTER, s ? "." : n ? "4" : "IV");
+            it.print(getClkX(5), getClkY(5), id(small_font), TextAlign::CENTER, s ? "." : n ? "5" : "V");
+            it.print(getClkX(7), getClkY(7), id(small_font), TextAlign::CENTER, s ? "." : n ? "7" : "VII");
+            it.print(getClkX(8), getClkY(8), id(small_font), TextAlign::CENTER, s ? "." : n ? "8" : "VIII");
+            it.print(getClkX(10), getClkY(10), id(small_font), TextAlign::CENTER, s ? "." : n ? "10" : "X");
+            it.print(getClkX(11), getClkY(11), id(small_font), TextAlign::CENTER, s ? "." : n ? "11" : "XI");
+          }
 
           // Weather Temp //
           if (id(weather_temp_max) != -1000.0 && epochTime <= weatherExpiryTime) {
@@ -235,15 +278,17 @@ display:
           it.strftime(w/2, h/2 + 30, id(small_font), TextAlign::TOP_CENTER, "%a %d %b", now);
 
           // Hour Hand //
-          double hr = ((now.hour % 12 + now.minute / 60.0) / 12.0 * 360.0 - 90.0) * (M_PI / 180.0);
+          double hr = ((now.hour % (hr24 ? 24 : 12) + now.minute / 60.0) / (hr24 ? 24.0 : 12.0) * 360.0 + (hr24 ? 90.0 : -90.0)) * (M_PI / 180.0);
           for (int x=-2; x<=2; ++x) {
             for (int y=-2; y<=2; ++y) {
               it.line(w/2 +x, h/2 +y, w/2.0 + w/3.5 * cos(hr) +x, h/2.0 + h/3.5 * sin(hr) +y);
             }
           }
 
-          // Minute Hand //
-          if (!id(power_saving_mode).state) {
+          if (!id(power_saving_mode)) {
+            // Minute Hand //
+            // math for slow mode, only updating every 10 minutes
+            // double mn = ((hr24 ? ((now.minute / 10) * 10) : now.minute) / 60.0 * 360.0 - 90.0) * (M_PI / 180.0);
             double mn = (now.minute / 60.0 * 360.0 - 90.0) * (M_PI / 180.0);
             for (int x=-1; x<=1; ++x) {
               for (int y=-1; y<=1; ++y) {
