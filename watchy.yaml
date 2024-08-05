@@ -554,7 +554,7 @@ binary_sensor:
     on_press:
       - lambda: |-
           if (id(mode) == $MODE_FACES) {
-            id(power_saving_mode).state = true;
+            id(power_saving_mode).turn_on();
             id(keep_awake) = false;
             id(updating_weather) = false;
             id(wifi_id).disable();
@@ -807,7 +807,10 @@ script:
                       if (id(power_saving_mode).state) {
                         return ((60 - now.minute) * 60 - now.second) * 1000;
                       } else {
+                        // 1 minute sleep:
                         return 60000;
+                        // 10 minute sleep:
+                        // return ((10 - (now.minute % 10)) * 60 - now.second) * 1000;
                       }
           else:
             if:
@@ -864,7 +867,6 @@ time:
 
 deep_sleep:
   # https://esphome.io/components/deep_sleep.html
-  sleep_duration: 60sec
   wakeup_pin_mode: INVERT_WAKEUP
   wakeup_pin:
     number: $BUTTON_LEFT_TOP_PIN
