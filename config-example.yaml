@@ -28,3 +28,4 @@ BIRTHDAY1: "0"
 BIRTHMONTH1: "0"
 BIRTHDAY2: "0"
 BIRTHMONTH2: "0"
+HOME_ASSISTANT_API_KEY: "your-random-key-here" # https://esphome.io/components/api.html

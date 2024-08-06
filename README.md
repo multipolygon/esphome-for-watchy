@@ -93,8 +93,7 @@ Intentionally, this project does not include any on-watch user settings screens 
 
 - Press: Power On / Silence Alarm
 - 2nd Press: Home / Wifi On / ePaper Refresh
-- Long Press (3s): ePaper Refresh
-- Long Press (5s): Set power-saving mode and go to sleep
+- Long Press (3s): Set power-saving mode and go to sleep
 
 #### Upper Right :: Cycle Faces
 
@@ -111,6 +110,7 @@ Intentionally, this project does not include any on-watch user settings screens 
 #### Lower Right :: Menu
 
 - Press: Settings Menu
+- Long Press (3s): ePaper Refresh
 
 When in Settings Menu mode:
 
@@ -299,10 +299,13 @@ See: https://esphome.io/components/improv_serial.html
 
 ## Ideas
 
+- Alarm minutes (work in progress)
+- Moon phase
+- 24h analogue face
 - Sync with calendar and daily even summaries
 - Clicker-counter mode
 - Auto-sleep could be delayed longer if wifi is already disabled
 - Preset count-down timers
 - Enable/disable hourly alarms on the watch
-- [Metric time](https://en.wikipedia.org/wiki/Metric_time)
+- [Metric-time faces](https://metric-time.com/)
 - Change time-zone on watch when travelling
