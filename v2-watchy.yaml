@@ -204,7 +204,7 @@ display:
           } else {
             // https://metric-time.com/
             const auto metricTime = ((float(now.hour) * 60.0 * 60.0 + float(now.minute) * 60.0 + float(now.second)) / 86400.0) * 1000.0;
-            it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER, "%.0f:%02d", metricTime / 100.0, int(metricTime) % 100);
+            it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER, "%.0f:%02d", floor(metricTime / 100.0), int(metricTime) % 100);
           }
 
         } else if (id(face) == FACE_HANDS_ARABIC || id(face) == FACE_HANDS_ARABIC_SMALL || id(face) == FACE_HANDS_ROMAN || id(face) == FACE_HANDS_ROMAN_SMALL) {
