@@ -8,7 +8,7 @@ substitutions:
   <<: !include mdi.yaml
   ID: "1"
   NAME: watchy-v$VERSION-id$ID
-  FACE_COUNT: "8"
+  FACE_COUNT: "9"
   MODE_FACES: "0"
   MODE_TIMERS: "1"
   MODE_MENU: "2"
@@ -141,29 +141,34 @@ display:
       }
 
       if (id(mode) == $MODE_FACES) {
-        const int FACE_DIGITAL = 0;
-        const int FACE_HANDS_ARABIC = 1;
-        const int FACE_HANDS_ARABIC_SMALL = 2;
-        const int FACE_HANDS_ROMAN = 3;
-        const int FACE_HANDS_ROMAN_SMALL = 4;
-        const int FACE_HUGE_WEATHER_ICON = 5;
-        const int FACE_QUAD_WEATHER_ICONS = 6;
-        const int FACE_INFO_DEBUG = 7;
+        const int FACE_DIGITAL_24 = 0;
+        const int FACE_DIGITAL_12 = 1;
+        const int FACE_HANDS_ARABIC = 2;
+        const int FACE_HANDS_ARABIC_SMALL = 3;
+        const int FACE_HANDS_ROMAN = 4;
+        const int FACE_HANDS_ROMAN_SMALL = 5;
+        const int FACE_HUGE_WEATHER_ICON = 6;
+        const int FACE_QUAD_WEATHER_ICONS = 7;
+        const int FACE_INFO_DEBUG = 8;
 
-        if (id(face) == FACE_DIGITAL) {
+        if (id(face) == FACE_DIGITAL_24 || id(face) == FACE_DIGITAL_12) {
 
           // Date //
           it.strftime(w/2, 0, id(date_font), TextAlign::TOP_CENTER, "%a %d %b", now);
 
           // Time //
-          if (now.hour <= 9) {
+          auto hour = now.hour;
+          if (id(face) == FACE_DIGITAL_12) {
+            hour = hour % 12;
+            if (hour == 0) { hour = 12; }
+            it.print(w-5, h/2+46, id(small_font), TextAlign::CENTER_RIGHT, now.hour < 12 ? "AM" : "PM");
+          }
+          if (hour <= 9) {
             it.printf(0, h/2, id(mdi), TextAlign::CENTER_LEFT, "%s", calendarIcon);
           }
-          it.printf(w/2-10, h/2, id(time_font), TextAlign::CENTER_RIGHT, "%d", now.hour);
+          it.printf(w/2-10, h/2, id(time_font), TextAlign::CENTER_RIGHT, "%d", hour);
           it.print(w/2, h/2-5, id(time_font), TextAlign::CENTER, ":");
-          if (!id(power_saving_mode).state) {
-            it.printf(w/2+10, h/2, id(time_font), TextAlign::CENTER_LEFT, "%02d", now.minute);
-          }
+          it.printf(w/2+10, h/2, id(time_font), TextAlign::CENTER_LEFT, "%02d", now.minute);
 
           // Weather //
           if (id(weather_temp_max) != -1000.0 && epochTime <= weatherExpiryTime) {
@@ -186,14 +191,14 @@ display:
               it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER,
                 "%dh %02dm",
                 (activeTimer) / (60*60),
-                id(power_saving_mode).state ? 0 : ((activeTimer / 60) % 60)
+                (activeTimer / 60) % 60
               );
             } else {
               it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER,
                 "%dd %dh %02dm",
                 activeTimer / (24*60*60),
                 (activeTimer % (24*60*60)) / (60*60),
-                id(power_saving_mode).state ? 0 : ((activeTimer / 60) % 60)
+                (activeTimer / 60) % 60
               );
             }
           } else {
@@ -244,12 +249,10 @@ display:
           }
 
           // Minute Hand //
-          if (!id(power_saving_mode).state) {
-            double mn = (now.minute / 60.0 * 360.0 - 90.0) * (M_PI / 180.0);
-            for (int x=-1; x<=1; ++x) {
-              for (int y=-1; y<=1; ++y) {
-                it.line(w/2 +x, h/2 +y, w/2.0 + w/2.5 * cos(mn) +x, h/2.0 + h/2.5 * sin(mn) +y);
-              }
+          double mn = (now.minute / 60.0 * 360.0 - 90.0) * (M_PI / 180.0);
+          for (int x=-1; x<=1; ++x) {
+            for (int y=-1; y<=1; ++y) {
+              it.line(w/2 +x, h/2 +y, w/2.0 + w/2.5 * cos(mn) +x, h/2.0 + h/2.5 * sin(mn) +y);
             }
           }
 
@@ -473,7 +476,7 @@ graphical_display_menu:
       text: !lambda |-
         if (id(alarm_a_enable).state) {
           char buffer[20];
-          sprintf(buffer, "Alarm A (%.0f:%02.0f)", id(alarm_a_hour).state, id(alarm_a_min).state);
+          snprintf(buffer, 20, "Alarm A (%.0f:%02.0f)", id(alarm_a_hour).state, id(alarm_a_min).state);
           return buffer;
         }
         return "Alarm A (Off)";
@@ -483,6 +486,7 @@ graphical_display_menu:
         - type: switch
           text: "Enable"
           switch: alarm_a_enable
+          immediate_edit: true
         - &alarmItem
           text: "Hour"
           number: alarm_a_hour
@@ -499,7 +503,7 @@ graphical_display_menu:
       text: !lambda |-
         if (id(alarm_b_enable).state) {
           char buffer[20];
-          sprintf(buffer, "Alarm B (%.0f:%02.0f)", id(alarm_b_hour).state, id(alarm_b_min).state);
+          snprintf(buffer, 20, "Alarm B (%.0f:%02.0f)", id(alarm_b_hour).state, id(alarm_b_min).state);
           return buffer;
         }
         return "Alarm B (Off)";
@@ -509,6 +513,7 @@ graphical_display_menu:
         - type: switch
           text: "Enable"
           switch: alarm_b_enable
+          immediate_edit: true
         - <<: *alarmItem
           text: "Hour"
           number: alarm_b_hour
@@ -519,6 +524,7 @@ graphical_display_menu:
     - type: switch
       text: Power save
       switch: power_saving_mode
+      immediate_edit: true
 
     - type: command
       # Home Assistant example service call.
@@ -798,11 +804,10 @@ script:
     then:
       lambda: |-
         const auto now = id(ntp).now();
-        const auto psm = id(power_saving_mode).state;
 
         if (
-          (id(alarm_a_enable).state && int(id(alarm_a_hour).state) == now.hour && (psm || int(id(alarm_a_min).state) == now.minute)) ||
-          (id(alarm_b_enable).state && int(id(alarm_b_hour).state) == now.hour && (psm || int(id(alarm_b_min).state) == now.minute))
+          (id(alarm_a_enable).state && int(id(alarm_a_hour).state) == now.hour && int(id(alarm_a_min).state) == now.minute) ||
+          (id(alarm_b_enable).state && int(id(alarm_b_hour).state) == now.hour && int(id(alarm_b_min).state) == now.minute)
         ) {
           id(alarm_buzzing) = true;
           id(keep_awake) = true;
@@ -885,12 +890,12 @@ script:
                     sleep_duration: !lambda |-
                       const auto now = id(ntp).now();
                       if (id(power_saving_mode).state) {
-                        return ((60 - now.minute) * 60 - now.second) * 1000;
+                        // NOTE: Sleep duration must align with alarm minutes step size
+                        // 10 minute sleep:
+                        return ((10 - (now.minute % 10)) * 60 - now.second) * 1000; // ms
                       } else {
                         // 1 minute sleep:
-                        return 60000;
-                        // 10 minute sleep:
-                        // return ((10 - (now.minute % 10)) * 60 - now.second) * 1000;
+                        return 60000; // ms
                       }
           else:
             if:
@@ -1223,7 +1228,7 @@ number:
     min_value: 0
     initial_value: 0
     max_value: 59
-    step: 5
+    step: 10 ## NOTE: Step size must be same as power_saving_mode sleep_duration
 
   - <<: *alarmHour
     id: alarm_b_hour
