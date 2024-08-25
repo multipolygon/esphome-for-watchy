@@ -302,10 +302,9 @@ See: https://esphome.io/components/improv_serial.html
 
 ## Ideas
 
-- Alarm minutes (work in progress)
 - Moon phase
 - 24h analogue face
-- Sync with calendar and daily even summaries
+- Sync with calendar and daily event summaries
 - Clicker-counter mode
 - Auto-sleep could be delayed longer if wifi is already disabled
 - Preset count-down timers

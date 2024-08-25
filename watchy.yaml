@@ -51,7 +51,7 @@ esphome:
               id(updating_weather) = true;
               id(wifi_id).enable();
             } else if (!id(keep_awake) && id(mode) == $MODE_FACES) {
-              if (random(1000) == 0) {
+              if (random(10000) == 0) {
                 id(chime) = true;
                 id(mode) = id(mode) + 1000;
               }
@@ -439,7 +439,7 @@ display:
       } else if (id(mode) >= 1000) {
         id(mode) = id(mode) - 1000;
         it.print(w/2, h/2, id(date_font), TextAlign::BOTTOM_CENTER, "DON'T");
-        it.print(w/2, h/2, id(date_font), TextAlign::TOP_CENTER, "PANIC");
+        it.print(w/2, h/2, id(date_font), TextAlign::TOP_CENTER, "PANIC!");
 
       } else if (id(mode) == $MODE_QR) {
         auto qr = id(qr_vcard);
@@ -858,12 +858,11 @@ script:
                   id(updating_weather) = false;
 
                   if (id(mode) == $MODE_FACES) {
+                    id(epaper).update();
                     id(epaper).do_full_update();
+                    id(epaper).update();
                   }
 
-              - delay: 10ms ## Adding a delay because epaper updates are glitchy after weather response
-              - component.update: epaper
-              - delay: 100ms
               - script.execute: conditional_sleep
 
   - id: conditional_sleep
@@ -1028,7 +1027,7 @@ font:
   - id: date_font
     file: "fonts/Futura Bold/Futura Bold.otf"
     size: 28
-    glyphs: ":°'-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz"
+    glyphs: "!:°'-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz"
 
   - id: time_font
     file: "fonts/Futura Bold/Futura Bold.otf"
