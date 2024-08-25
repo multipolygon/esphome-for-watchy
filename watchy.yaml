@@ -51,7 +51,7 @@ esphome:
               id(updating_weather) = true;
               id(wifi_id).enable();
             } else if (!id(keep_awake) && id(mode) == $MODE_FACES) {
-              if (random(10000) == 0) {
+              if (random(100) == random(100)) {
                 id(chime) = true;
                 id(mode) = id(mode) + 1000;
               }
@@ -580,6 +580,7 @@ binary_sensor:
               id(menu).show_main();
             } else if (id(wifi_id).is_disabled()) {
               id(power_saving_mode).turn_off();
+              id(updating_weather) = true;
               id(wifi_id).enable();
             } else {
               id(epaper).do_full_update();
