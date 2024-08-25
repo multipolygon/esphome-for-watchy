@@ -51,7 +51,7 @@ esphome:
               id(updating_weather) = true;
               id(wifi_id).enable();
             } else if (!id(keep_awake) && id(mode) == $MODE_FACES) {
-              if (random(100) == random(100)) {
+              if (random(1000) == random(1000)) {
                 id(chime) = true;
                 id(mode) = id(mode) + 1000;
               }
