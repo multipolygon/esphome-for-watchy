@@ -222,7 +222,7 @@ const char *city[] = {
 const int cityLen = 24;
 
 std::map<int, const char *>
-    calendarIcons{
+    significantDatesIcons{
         // https://www.timeanddate.com/holidays/world/
         // https://www.timeanddate.com/holidays/un/
         {101, mdiPartyPopper},
@@ -249,5 +249,6 @@ std::map<int, const char *>
         {921, mdiPeace},
         {1005, mdiHumanMaleBoard},
         {1031, mdiHalloween},
+        {1111, mdiMedal},
         {1120, mdiTeddyBear},
     };

@@ -1,7 +1,7 @@
 // This is a simple script that will convert the v3 Watchy YAML to v2 settings
 // for backwars compatibility with other (older) hardware.
 
-import yaml from "yaml";
+import yaml, { YAMLSeq, YAMLMap } from "yaml";
 import * as fs from "fs";
 
 export default () => {
@@ -21,20 +21,28 @@ export default () => {
     partitions: "min_spiffs.csv",
   });
 
-  v2.get("time").add({
+  v2.addIn(["time"], {
     platform: "pcf8563",
     id: "pcf",
     update_interval: "never",
     address: "0x51",
   });
 
-  const isCharging = v2
-    .get("binary_sensor")
-    .items.find((x) =>
-      x.items.find((pair) => pair.key.value == "id" && pair.value.value == "is_charging")
+  const binarySensor = v2.get("binary_sensor");
+
+  if (binarySensor instanceof YAMLSeq) {
+    const isCharging = binarySensor.items.find(
+      (x) =>
+        x instanceof YAMLMap &&
+        x.items.find(
+          (pair) => pair.key.value == "id" && pair.value.value == "is_charging"
+        )
     );
-  isCharging.delete("pin");
-  isCharging.set("platform", "template");
+    if (isCharging instanceof YAMLMap) {
+      isCharging.delete("pin");
+      isCharging.set("platform", "template");
+    }
+  }
 
   fs.writeFileSync("../v2-watchy.yaml", v2.toString());
 };

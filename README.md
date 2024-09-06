@@ -255,6 +255,54 @@ To upload new firmware/watchfaces to Watchy, you will need to enter **bootloader
 1. Press and hold the top 2 buttons for more than 4 seconds, then release the **Right button first**, before releasing the Back button
 1. Watchy should now reset, wait a few seconds for it to boot up and refresh the screen
 
+## Home Assistant Setup
+
+### Add Watchy as a device
+
+Follow these instructions:
+
+<https://esphome.io/guides/getting_started_hassio.html#connecting-your-device-to-home-assistant>
+
+### Add your Calendar to Home Assistant
+
+Instructions:
+
+<https://www.home-assistant.io/integrations/caldav/>
+
+Then create an Automation:
+
+```
+alias: Send Calendar Agenda to Wathcy
+description: ""
+trigger:
+  - platform: state
+    entity_id:
+      - binary_sensor.watchy_0_request_agenda
+    to: "on"
+condition: []
+action:
+  - response_variable: agenda
+    metadata: {}
+    target:
+      entity_id:
+        - calendar.main
+    action: calendar.get_events
+    data_template:
+      end_date_time: "{{ today_at(\"23:59:59\") }}"
+  - if:
+      - condition: template
+        value_template: '{{ agenda["calendar.main"]["events"] | length > 0 }}'
+    then:
+      - data_template:
+          agenda_json: >-
+            {{ agenda["calendar.main"]["events"] | map(attribute='summary') |
+            list | to_json }}
+        action: esphome.watchy_v3_id0_set_agenda
+mode: single
+```
+
+<https://www.home-assistant.io/integrations/calendar/#action-calendarget_events>
+
 ## Watchy Hardware Mods
 
 _Disclaimer: This following is not advice._
@@ -308,7 +356,7 @@ See: https://esphome.io/components/improv_serial.html
 - Clicker-counter mode
 - Auto-sleep could be delayed longer if wifi is already disabled
 - Preset count-down timers
-- Enable/disable hourly alarms on the watch
+- Enable/disable hourly chimes on the watch
 - [Metric-time faces](https://metric-time.com/)
 - Change time-zone on watch when travelling
 - An accessible face that buzzes the time in morse code (or simple beats) on the hour (or 15/30 min options)

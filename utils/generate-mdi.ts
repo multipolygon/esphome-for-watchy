@@ -7,7 +7,7 @@ export default () => {
     .match(/"\$mdi\w+?"/g)
     .map((x) => x.replaceAll('"', "").replaceAll("$", ""));
 
-  console.log(required.length, "icons required");
+  // console.log(required.length, "icons required");
 
   function camelize(str) {
     return str
@@ -24,11 +24,18 @@ export default () => {
     .split(")")[0]
     .trim()
     .split("\n")
-    .map((l) => l.trim().replaceAll('"', "").replaceAll(",", "").replaceAll("-", " ").split(": "))
+    .map((l) =>
+      l
+        .trim()
+        .replaceAll('"', "")
+        .replaceAll(",", "")
+        .replaceAll("-", " ")
+        .split(": ")
+    )
     .map(([name, code]) => [camelize("mdi " + name), code])
     .filter(([name, code]) => required.includes(name));
 
-  console.log(x.length);
+  console.log(x.length, "mdi");
 
   fs.writeFileSync(
     "../mdi.yaml",
@@ -36,6 +43,8 @@ export default () => {
   );
   fs.writeFileSync(
     "../mdi.h",
-    x.map(([name, code]) => `const char *${name} = "\\U000${code}";`).join("\n") + "\n"
+    x
+      .map(([name, code]) => `const char *${name} = "\\U000${code}";`)
+      .join("\n") + "\n"
   );
 };

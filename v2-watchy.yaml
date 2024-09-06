@@ -13,6 +13,9 @@ substitutions:
   MODE_TIMERS: "1"
   MODE_MENU: "2"
   MODE_QR: "3"
+  MODE_DP: "4"
+  MODE_WUN: "5"
+  MODE_AGENDA: "6"
 
 logger:
   # https://esphome.io/components/logger.html#log-levels
@@ -30,40 +33,61 @@ esphome:
       - pcf8563.read_time: # Only for Watchy v2
       - component.update: battery
       - lambda: |-
-          randomSeed(esp_random());
           const auto now = id(ntp).now();
           const auto utcnow = id(ntp).utcnow();
+          randomSeed(utcnow.timestamp + id(weather_times)[0]);
+
+          if (id(mode) == $MODE_MENU) {
+            id(mode) = $MODE_FACES;
+          }
 
           id(alarms).execute();
 
           if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_TIMER) {
             id(keep_awake) = true;
+            if (id(mode) == $MODE_AGENDA) {
+              id(mode) = $MODE_FACES;
+            }
           }
 
-          // if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED) {
-          //   id(wifi_id).enable(); // Turn on WiFi after flashing
-          // }
+          if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED) {
+            id(wifi_id).enable(); // Turn on WiFi after flashing
+          }
 
           if (!id(power_saving_mode).state) {
             id(chime) = now.minute == 0 && (now.hour == 8 || now.hour == 12 || now.hour == 16);
 
-            if ((utcnow.hour % 3 == 0 && utcnow.minute == 0)) {
-              id(updating_weather) = true;
+            if (utcnow.hour % 3 == 0 && utcnow.minute == 0) {
+              id(request_weather).publish_state(true);
               id(wifi_id).enable();
-            } else if (!id(keep_awake) && id(mode) == $MODE_FACES) {
-              if (random(1000) == random(1000)) {
-                id(chime) = true;
-                id(mode) = id(mode) + 1000;
+            }
+            
+            if (now.hour == 3 && now.minute == 0) {
+            // if (true) {
+              id(request_agenda).publish_state(true);
+              id(wifi_id).enable();
+            }
+
+            if (id(mode) == $MODE_FACES
+                && !id(keep_awake)
+                && !id(chime)
+                && !id(request_weather).state
+                && !id(request_agenda).state
+                && now.hour >= 9 && now.hour <= 21
+            ) {
+              auto r = random(1000);
+              if (0 == r) {
+                id(mode) = $MODE_DP;
+                id(buzzer).turn_on();
+              } else if (1 == r) {
+                id(mode) = $MODE_WUN;
+                id(buzzer).turn_on();
               }
             }
           }
 
           if (id(keep_awake) || id(chime)) {
             id(buzzer).turn_on();
-          }
-
-          if (id(mode) == $MODE_MENU) {
-            id(mode) = $MODE_FACES;
           }
 
           id(epaper).update();
@@ -125,19 +149,19 @@ display:
         id(chime) ? mdiBellOutline :
         "";
 
-      const char *calendarIcon = "";
+      const char *significantDateIcon = "";
       if (
         m == $BIRTHMONTH && d == $BIRTHDAY ||
         m == $BIRTHMONTH1 && d == $BIRTHDAY1 ||
         m == $BIRTHMONTH2 && d == $BIRTHDAY2
       ) {
-        calendarIcon = mdiCakeVariantOutline;
-      } else if (calendarIcons.find(md) != calendarIcons.end()) {
-        calendarIcon = calendarIcons[md];
+        significantDateIcon = mdiCakeVariantOutline;
+      } else if (significantDatesIcons.find(md) != significantDatesIcons.end()) {
+        significantDateIcon = significantDatesIcons[md];
       } else if (now.day_of_year == 256) {
-        calendarIcon = mdiCodeBraces;
+        significantDateIcon = mdiCodeBraces;
       } else if (now.day_of_week == FRIDAY && d == 13) {
-        calendarIcon = mdiClover;
+        significantDateIcon = mdiClover;
       }
 
       if (id(mode) == $MODE_FACES) {
@@ -164,7 +188,7 @@ display:
             it.print(w-5, h/2+46, id(small_font), TextAlign::CENTER_RIGHT, now.hour < 12 ? "AM" : "PM");
           }
           if (hour <= 9) {
-            it.printf(0, h/2, id(mdi), TextAlign::CENTER_LEFT, "%s", calendarIcon);
+            it.printf(0, h/2, id(mdi), TextAlign::CENTER_LEFT, "%s", significantDateIcon);
           }
           it.printf(w/2-10, h/2, id(time_font), TextAlign::CENTER_RIGHT, "%d", hour);
           it.print(w/2, h/2-5, id(time_font), TextAlign::CENTER, ":");
@@ -436,10 +460,14 @@ display:
         it.print(0 - 5, 0 - 3, id(mdi_small), TextAlign::TOP_LEFT, "$mdiArrowLeftTop");
         it.menu(30, 10, id(menu), w, h - 10);
 
-      } else if (id(mode) >= 1000) {
-        id(mode) = id(mode) - 1000;
+      } else if (id(mode) == $MODE_DP) {
+        id(mode) = $MODE_FACES;
         it.print(w/2, h/2, id(date_font), TextAlign::BOTTOM_CENTER, "DON'T");
         it.print(w/2, h/2, id(date_font), TextAlign::TOP_CENTER, "PANIC!");
+
+      } else if (id(mode) == $MODE_WUN) {
+        id(mode) = $MODE_FACES;
+        it.print(0, 0, id(small_font), TextAlign::TOP_LEFT, "Wake up, Neo...");
 
       } else if (id(mode) == $MODE_QR) {
         auto qr = id(qr_vcard);
@@ -463,6 +491,34 @@ display:
         it.printf(w/2, -2, id(small_font), TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
         it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT, "%s", wifiIcon);
         it.qr_code(x, y, qr, Color(255,255,255), scale);
+
+      } else if (id(mode) == $MODE_AGENDA) {
+        it.printf(w/2, -2, id(small_font), TextAlign::TOP_CENTER, "%d:%02d", now.hour, now.minute);
+        it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT, "%s", wifiIcon);
+
+        const int t = 26;
+        const int m = 6;
+        const int lh = 18;
+
+        it.rectangle(0, t, w, h-t);
+        it.rectangle(2, t+2, w-4, h-t-4);
+        it.rectangle(2, t+2, w-4, m+lh+m);
+        it.print(6, t+m-1, id(mdi_small), TextAlign::TOP_LEFT, mdiCalendarClock);
+        it.strftime(w/2, t+m-1, id(small_font), TextAlign::TOP_CENTER, "%a %d %b", now);
+
+        DynamicJsonDocument doc(2048);
+        deserializeJson(doc, id(agenda));
+
+        // for (JsonObject elem : doc.as<JsonArray>()) {
+        //   String str = elem["summary"].as<String>();
+        // }
+
+        int l = t+2+m+lh+m+m;
+
+        for (String str : doc.as<JsonArray>()) {
+          it.printf(14, l, id(small_font), TextAlign::TOP_LEFT, "%s", str.c_str());
+          l += lh;
+        }
       }
 
 graphical_display_menu:
@@ -491,7 +547,7 @@ graphical_display_menu:
           text: "Hour"
           number: alarm_a_hour
           type: number
-          format: "%2.0f"
+          format: "%02.0f"
           on_value:
             then:
               lambda: id(alarm_a_enable).turn_on();
@@ -526,14 +582,17 @@ graphical_display_menu:
       switch: power_saving_mode
       immediate_edit: true
 
+    - text: "Clock interval"
+      number: update_interval_minutes
+      type: number
+      format: "%2.0f"
+
     - type: command
-      # Home Assistant example service call.
-      # https://esphome.io/components/api.html
-      text: Update Weather
+      text: Refresh weather
       on_value:
         then:
           lambda: |-
-            id(updating_weather) = true;
+            id(request_weather).publish_state(true);
             id(mode) = $MODE_FACES;
             if (id(wifi_id).is_disabled()) {
               id(wifi_id).enable();
@@ -541,6 +600,15 @@ graphical_display_menu:
               id(update_weather).execute();
             }
             id(ntp).update();
+
+    - type: command
+      text: "Today's Agenda"
+      on_value:
+        then:
+          lambda: |-
+            id(request_agenda).publish_state(true);
+            id(mode) = $MODE_AGENDA;
+            id(wifi_id).enable();
 
     - type: command
       # Home Assistant example service call.
@@ -580,7 +648,7 @@ binary_sensor:
               id(menu).show_main();
             } else if (id(wifi_id).is_disabled()) {
               id(power_saving_mode).turn_off();
-              id(updating_weather) = true;
+              id(request_weather).publish_state(true);
               id(wifi_id).enable();
             } else {
               id(epaper).do_full_update();
@@ -600,7 +668,7 @@ binary_sensor:
           if (id(mode) == $MODE_FACES) {
             id(power_saving_mode).turn_on();
             id(keep_awake) = false;
-            id(updating_weather) = false;
+            id(request_weather).publish_state(false);
             id(wifi_id).disable();
             id(epaper).update();
             id(conditional_sleep).execute();
@@ -625,7 +693,9 @@ binary_sensor:
               id(menu).enter();
             } else if (id(mode) == $MODE_TIMERS || id(timers)[0] == 0) {
               id(mode) = $MODE_TIMERS;
-              id(active_timer) = (id(active_timer) + 1) % 5;
+              if (id(timers)[id(active_timer)] != 0) {
+                id(active_timer) = (id(active_timer) + 1) % 5;
+              }
               id(timers)[id(active_timer)] = id(ntp).utcnow().timestamp;
             } else {
               id(mode) = $MODE_TIMERS;
@@ -767,6 +837,17 @@ binary_sensor:
     on_state:
       component.update: epaper
 
+  # https://esphome.io/components/binary_sensor/template
+  - id: request_weather
+    name: Watchy $ID Request Weather
+    platform: template
+    publish_initial_state: true
+
+  - id: request_agenda
+    name: Watchy $ID Request Agenda
+    platform: template
+    publish_initial_state: true
+
 wifi:
   # https://esphome.io/components/wifi.html
   # https://esphome.io/components/wifi.html#connecting-to-multiple-networks
@@ -785,7 +866,7 @@ wifi:
         if (now.hour == 0 && now.minute == 0 || !now.is_valid()) {
           id(ntp).update();
         }
-        if (id(updating_weather)) {
+        if (id(request_weather).state) {
           id(update_weather).execute();
         }
 
@@ -819,7 +900,8 @@ script:
   - id: update_weather
     mode: single
     then:
-      # - lambda: ESP_LOGE("watchy", "Weather HTTP request.");
+      - lambda: |-
+          ESP_LOGI("watchy", "Weather HTTP request");
       # TODO: Add if-condition to test if $WEATHER_KEY has been set in secrets.yaml
       - http_request.get:
           # https://esphome.io/components/http_request.html#http-request-get-action
@@ -832,16 +914,17 @@ script:
           on_response:
             then:
               - lambda: |-
-                  // ESP_LOGE("watchy", "Weather status %d %ums.", status_code, duration_ms);
+                  // ESP_LOGI("watchy", "Weather status %d %ums.", status_code, duration_ms);
+                  ESP_LOGI("watchy", "Weather HTTP response");
 
                   json::parse_json(body, [](JsonObject root) -> bool {
                     float tMin = 1000.0;
                     float tMax = -1000.0;
 
                     for (int x=0; x<=3; ++x) {
-                      // ESP_LOGE("watchy", "Weather code %d @ %d", root["list"][x]["weather"][0]["id"], root["list"][x]["dt"]);
                       id(weather_times)[x] = int(root["list"][x]["dt"]) + 90 * 60; // Add 90min (50%) to expiry time
                       id(weather_codes)[x] = weatherCode(root["list"][x]["weather"][0]["id"], root["list"][x]["sys"]["pod"]);
+                      ESP_LOGI("watchy", "Weather code %d @ %d", id(weather_codes)[x], id(weather_times)[x]);
                       tMin = min(tMin, float(root["list"][x]["main"]["temp_min"]));
                       tMax = max(tMax, float(root["list"][x]["main"]["temp_max"]));
                     }
@@ -849,10 +932,12 @@ script:
                     id(weather_temp_min) = tMin;
                     id(weather_temp_max) = tMax;
 
+                    ESP_LOGI("watchy", "Weather min: %.1f, max: %.1f", id(weather_temp_min), id(weather_temp_max));
+
                     return true;
                   });
 
-                  id(updating_weather) = false;
+                  id(request_weather).publish_state(false);
 
                   if (id(mode) == $MODE_FACES) {
                     id(epaper).update();
@@ -885,18 +970,19 @@ script:
                 - deep_sleep.enter: &deep_sleep_duration
                     sleep_duration: !lambda |-
                       const auto now = id(ntp).now();
-                      if (id(power_saving_mode).state) {
-                        // NOTE: Sleep duration must align with alarm minutes step size
-                        // 10 minute sleep:
-                        return ((10 - (now.minute % 10)) * 60 - now.second) * 1000; // ms
+                      const int clockUpdateInterval = int(id(update_interval_minutes).state);
+                      if (clockUpdateInterval == 0 && id(power_saving_mode).state) {
+                        return 15 * 60 * 1000; // 15 min in ms
+                      } else if (clockUpdateInterval == 0) {
+                        return 1 * 60 * 1000; // 1 min in ms
                       } else {
-                        // 1 minute sleep:
-                        return 60000; // ms
+                        return ((clockUpdateInterval - (now.minute % clockUpdateInterval)) * 60 - now.second) * 1000; // ms
                       }
           else:
             if:
               condition:
-                lambda: return !id(updating_weather) || id(sleep_timeout) > 3;
+                lambda: return (!id(request_weather).state && !id(request_agenda).state) ||
+                  id(sleep_timeout) > 3;
               then:
                 - switch.turn_off: buzzer
                 - deep_sleep.enter:
@@ -967,9 +1053,6 @@ globals:
   - id: keep_awake
     type: boolean
     initial_value: "false"
-  - id: updating_weather
-    type: boolean
-    initial_value: "false"
   - id: chime
     type: boolean
     initial_value: "false"
@@ -1013,6 +1096,11 @@ globals:
   - id: timers
     type: int[5]
     restore_value: yes
+  - id: agenda
+    type: std::string
+    restore_value: yes
+    max_restore_data_length: 254
+    initial_value: '""'
 
 font:
   # https://esphome.io/components/display/fonts.html
@@ -1057,6 +1145,7 @@ font:
       - "$mdiBatteryRemoveOutline"
       - "$mdiBellOutline"
       - "$mdiBellRingOutline"
+      - "$mdiCalendarClock"
       - "$mdiCheckCircleOutline"
       - "$mdiEmoticonHappyOutline"
       - "$mdiHomeAssistant"
@@ -1119,8 +1208,9 @@ font:
     id: mdi_weather_huge
     size: 146
 
-  - <<: *mdi_weather
-    id: mdi
+  - id: mdi
+    file: fonts/mdi/fonts/materialdesignicons-webfont.woff
+    size: 36
     glyphs:
       - "$mdiAirballoon"
       - "$mdiBee"
@@ -1149,6 +1239,7 @@ font:
       - "$mdiHumanMaleBoard"
       - "$mdiHumanMaleChild"
       - "$mdiLinkBoxVariant"
+      - "$mdiMedal"
       - "$mdiOfficeBuilding"
       - "$mdiPartyPopper"
       - "$mdiPeace"
@@ -1224,13 +1315,22 @@ number:
     min_value: 0
     initial_value: 0
     max_value: 59
-    step: 10 ## NOTE: Step size must be same as power_saving_mode sleep_duration
+    step: 10 ## Step size must be a multiple of 5
 
   - <<: *alarmHour
     id: alarm_b_hour
 
   - <<: *alarmMin
     id: alarm_b_min
+
+  - platform: template
+    id: update_interval_minutes
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    initial_value: 0
+    max_value: 60
+    step: 5 ## Step size must be a multiple of 5
 
 i2c:
   # https://esphome.io/components/i2c.html
@@ -1289,5 +1389,19 @@ external_components:
 
 api:
   # https://esphome.io/components/api.html
+  reboot_timeout: 0s
   encryption:
     key: $HOME_ASSISTANT_API_KEY
+  on_client_connected:
+    - lambda: ESP_LOGI("watchy", "API connected!");
+  actions:
+    - service: set_agenda
+      variables:
+        agenda_json: string
+      then:
+        - lambda: |-
+            ESP_LOGI("watchy", "set_agenda");
+            id(request_agenda).publish_state(false);
+            id(agenda) = agenda_json;
+            id(mode) = $MODE_AGENDA;
+            id(epaper).update();
