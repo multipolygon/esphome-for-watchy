@@ -269,10 +269,10 @@ Instructions:
 
 <https://www.home-assistant.io/integrations/caldav/>
 
-Then create an Automation:
+Then create an Automation to send agenda to Watchy:
 
 ```
-alias: Send Calendar Agenda to Wathcy
+alias: Watchy Calendar Agenda
 description: ""
 trigger:
   - platform: state
@@ -286,18 +286,69 @@ action:
     target:
       entity_id:
         - calendar.main
+        - calendar.birthdays
     action: calendar.get_events
     data_template:
+      start_date_time: "{{ today_at(\"00:00:00\") }}"
       end_date_time: "{{ today_at(\"23:59:59\") }}"
+  - alias: Parse data
+    variables:
+      simplified: >
+        [
+        {% for i in (agenda['calendar.main'].events + agenda['calendar.birthdays'].events) | sort(attribute="start") %}
+        {{ [as_datetime(i.start).hour, as_datetime(i.start).minute, (i.summary | trim) ] | to_json }}
+        {{ "," if not loop.last }}
+        {% endfor %}
+        ]
   - if:
       - condition: template
-        value_template: '{{ agenda["calendar.main"]["events"] | length > 0 }}'
+        value_template: "{{ simplified | list | length > 0 }}"
     then:
       - data_template:
           agenda_json: >-
-            {{ agenda["calendar.main"]["events"] | map(attribute='summary') |
-            list | to_json }}
+            {{ simplified }}
         action: esphome.watchy_v3_id0_set_agenda
+mode: single
+```
+
+Create an automation to send weather to Watchy:
+
+(This automation fetches and sends weather from OpenWeatherMap but it could use any Home Assistant weather forecast source and format it OpenWeatherMap JSON format.)
+
+```
+rest_command:
+  openweathermap_forecast:
+    # http://api.openweathermap.org/data/2.5/forecast?cnt=4&id=2158177&units=metric&lang=en&appid=SECRET
+    url: !secret openweathermap_url
+```
+
+```
+alias: Watchy Weather
+description: ""
+trigger:
+  - platform: state
+    entity_id:
+      - binary_sensor.watchy_0_request_weather
+    to: "on"
+condition: []
+action:
+  - action: rest_command.openweathermap_forecast
+    response_variable: response
+    data: {}
+  - if:
+      - condition: template
+        value_template: "{{ response.status == 200 }}"
+    then:
+      - alias: Parse data
+        variables:
+          simplified: >
+            { "list": [ {% for i in response.content.list %} {{ { 'dt': i.dt,
+            'main': { 'feels_like': i.main.feels_like }, 'weather': [{ 'id':
+            i.weather.0.id }], 'sys': { 'pod': i.sys.pod } } }} {{ "," if not
+            loop.last }} {% endfor %} ] }
+      - action: esphome.watchy_v3_id0_set_weather
+        data_template:
+          weather_json: "{{ simplified }}"
 mode: single
 ```
 

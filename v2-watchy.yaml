@@ -86,11 +86,16 @@ esphome:
             }
           }
 
+          id(epaper).update();
+          id(buzzer).turn_off();
+
           if (id(keep_awake) || id(chime)) {
             id(buzzer).turn_on();
+            // TODO: How to do the delay below inside lambda?
+            // delay(50);
           }
-
-          id(epaper).update();
+      - delay: 150ms
+      - lambda: |-
           id(buzzer).turn_off();
           id(conditional_sleep).execute();
 
@@ -149,6 +154,8 @@ display:
         id(chime) ? mdiBellOutline :
         "";
 
+      const char *upcomingEventIcon = id(next_event_at) != -1 ? mdiCalendarClock : "";
+
       const char *significantDateIcon = "";
       if (
         m == $BIRTHMONTH && d == $BIRTHDAY ||
@@ -206,7 +213,8 @@ display:
           );
 
           // Status Icons //
-          it.printf(w/2, h/2+46, id(mdi_small), TextAlign::CENTER, "%s%s%s%s", alertIcon, wifiIcon, batteryIcon, alarmEnabledIcon);
+          // TODO: Render all these to a string for re-use
+          it.printf(w/2, h/2+46, id(mdi_small), TextAlign::CENTER, "%s%s%s%s%s", alertIcon, wifiIcon, batteryIcon, alarmEnabledIcon, upcomingEventIcon);
 
           // Active Timer //
           if (id(timers)[id(active_timer)] != 0) {
@@ -225,6 +233,9 @@ display:
                 (activeTimer / 60) % 60
               );
             }
+          } else if (id(next_event_at) != -1) {
+            // TODO: This is only for debugging, remove it later:
+            it.printf(w/2, h/2-46, id(small_font), TextAlign::CENTER, "@%04d", id(next_event_at));
           } else {
             // https://metric-time.com/
             const auto metricTime = ((float(now.hour) * 60.0 * 60.0 + float(now.minute) * 60.0 + float(now.second)) / 86400.0) * 1000.0;
@@ -509,15 +520,28 @@ display:
         DynamicJsonDocument doc(2048);
         deserializeJson(doc, id(agenda));
 
-        // for (JsonObject elem : doc.as<JsonArray>()) {
-        //   String str = elem["summary"].as<String>();
-        // }
+        int l = t+m+lh+m+m;
+        id(next_event_at) = -1;
+        int hr_mn_now = now.hour * 100 + now.minute;
 
-        int l = t+2+m+lh+m+m;
-
-        for (String str : doc.as<JsonArray>()) {
-          it.printf(14, l, id(small_font), TextAlign::TOP_LEFT, "%s", str.c_str());
-          l += lh;
+        for (JsonArray elem : doc.as<JsonArray>()) {
+          int hr = elem[0].as<int>();
+          int mn = elem[1].as<int>();
+          String evt = elem[2].as<String>();
+          if (l <= h + lh) {
+            if (hr == 0 && mn == 0) {
+              // All-day events are at 00:00
+              it.printf(12, l, id(small_font), TextAlign::TOP_LEFT, "%s", evt.c_str());
+              l += lh;
+            } else if (hr >= now.hour) {
+              it.printf(12, l, id(small_font), TextAlign::TOP_LEFT, "%02d:%02d %s", hr, mn, evt.c_str());
+              l += lh;
+            }
+          }
+          int hr_mn = hr * 100 + mn;
+          if (hr_mn != 0 && id(next_event_at) == -1 && hr_mn > hr_mn_now) {
+            id(next_event_at) = hr_mn;
+          }
         }
       }
 
@@ -596,7 +620,7 @@ graphical_display_menu:
             id(mode) = $MODE_FACES;
             if (id(wifi_id).is_disabled()) {
               id(wifi_id).enable();
-            } else {
+            } else if ($ENABLE_WEATHER_API == true) {
               id(update_weather).execute();
             }
             id(ntp).update();
@@ -648,7 +672,9 @@ binary_sensor:
               id(menu).show_main();
             } else if (id(wifi_id).is_disabled()) {
               id(power_saving_mode).turn_off();
-              id(request_weather).publish_state(true);
+              if (id(ntp).utcnow().timestamp >= id(weather_times)[0]) {
+                id(request_weather).publish_state(true);
+              }
               id(wifi_id).enable();
             } else {
               id(epaper).do_full_update();
@@ -866,7 +892,7 @@ wifi:
         if (now.hour == 0 && now.minute == 0 || !now.is_valid()) {
           id(ntp).update();
         }
-        if (id(request_weather).state) {
+        if ($ENABLE_WEATHER_API == true && id(request_weather).state) {
           id(update_weather).execute();
         }
 
@@ -897,6 +923,16 @@ script:
           id(buzzer).turn_on();
         }
 
+        // Calendar agenda alarms:
+
+        if (
+          id(next_event_at) != -1 &&
+          (id(next_event_at) == now.hour * 100 + now.minute || id(next_event_at) == (now.hour + 1) * 100 + now.minute)
+        ) {
+          id(buzzer).turn_on();
+          id(mode) = $MODE_AGENDA;
+        }
+
   - id: update_weather
     mode: single
     then:
@@ -913,39 +949,48 @@ script:
           max_response_buffer_size: 3kB
           on_response:
             then:
-              - lambda: |-
-                  // ESP_LOGI("watchy", "Weather status %d %ums.", status_code, duration_ms);
-                  ESP_LOGI("watchy", "Weather HTTP response");
+              lambda: |-
+                // TODO: Test if response is 200
+                // ESP_LOGI("watchy", "Weather status %d %ums.", status_code, duration_ms);
+                ESP_LOGI("watchy", "Weather HTTP response");
+                id(parse_weather).execute(body);
+                id(conditional_sleep).execute();
 
-                  json::parse_json(body, [](JsonObject root) -> bool {
-                    float tMin = 1000.0;
-                    float tMax = -1000.0;
+  - id: parse_weather
+    mode: restart
+    parameters:
+      body: string
+    then:
+      lambda: |-
+        ESP_LOGI("watchy", "Parse weather body");
 
-                    for (int x=0; x<=3; ++x) {
-                      id(weather_times)[x] = int(root["list"][x]["dt"]) + 90 * 60; // Add 90min (50%) to expiry time
-                      id(weather_codes)[x] = weatherCode(root["list"][x]["weather"][0]["id"], root["list"][x]["sys"]["pod"]);
-                      ESP_LOGI("watchy", "Weather code %d @ %d", id(weather_codes)[x], id(weather_times)[x]);
-                      tMin = min(tMin, float(root["list"][x]["main"]["temp_min"]));
-                      tMax = max(tMax, float(root["list"][x]["main"]["temp_max"]));
-                    }
+        json::parse_json(body, [](JsonObject root) -> bool {
+          float tMin = 1000.0;
+          float tMax = -1000.0;
 
-                    id(weather_temp_min) = tMin;
-                    id(weather_temp_max) = tMax;
+          for (int x=0; x<=3; ++x) {
+            id(weather_times)[x] = int(root["list"][x]["dt"]) + 90 * 60; // Add 90min (50%) to expiry time
+            id(weather_codes)[x] = weatherCode(root["list"][x]["weather"][0]["id"], root["list"][x]["sys"]["pod"]);
+            ESP_LOGI("watchy", "Weather code %d @ %d", id(weather_codes)[x], id(weather_times)[x]);
+            tMin = min(tMin, float(root["list"][x]["main"]["feels_like"])); // or temp_min
+            tMax = max(tMax, float(root["list"][x]["main"]["feels_like"])); // or temp_max
+          }
 
-                    ESP_LOGI("watchy", "Weather min: %.1f, max: %.1f", id(weather_temp_min), id(weather_temp_max));
+          id(weather_temp_min) = tMin;
+          id(weather_temp_max) = tMax;
 
-                    return true;
-                  });
+          ESP_LOGI("watchy", "Weather min: %.1f, max: %.1f", id(weather_temp_min), id(weather_temp_max));
 
-                  id(request_weather).publish_state(false);
+          return true;
+        });
 
-                  if (id(mode) == $MODE_FACES) {
-                    id(epaper).update();
-                    id(epaper).do_full_update();
-                    id(epaper).update();
-                  }
+        id(request_weather).publish_state(false);
 
-              - script.execute: conditional_sleep
+        if (id(mode) == $MODE_FACES) {
+          id(epaper).update();
+          id(epaper).do_full_update();
+          id(epaper).update();
+        }
 
   - id: conditional_sleep
     mode: restart
@@ -1101,6 +1146,10 @@ globals:
     restore_value: yes
     max_restore_data_length: 254
     initial_value: '""'
+  - id: next_event_at
+    type: int
+    restore_value: yes
+    initial_value: "0"
 
 font:
   # https://esphome.io/components/display/fonts.html
@@ -1110,7 +1159,7 @@ font:
   - id: small_font
     file: "fonts/Futura Bold/Futura Bold.otf"
     size: 16
-    glyphs: "[]<>().:°'-/0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+    glyphs: "@[]<>().:°'-/0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
       abcdefghijklmnopqrstuvwxyz"
 
   - id: date_font
@@ -1395,13 +1444,22 @@ api:
   on_client_connected:
     - lambda: ESP_LOGI("watchy", "API connected!");
   actions:
+    - service: set_weather
+      variables:
+        weather_json: string
+      then:
+        lambda: |-
+          id(parse_weather).execute(weather_json);
+          id(conditional_sleep).execute();
+
     - service: set_agenda
       variables:
         agenda_json: string
       then:
-        - lambda: |-
-            ESP_LOGI("watchy", "set_agenda");
-            id(request_agenda).publish_state(false);
-            id(agenda) = agenda_json;
-            id(mode) = $MODE_AGENDA;
-            id(epaper).update();
+        lambda: |-
+          ESP_LOGI("watchy", "set_agenda");
+          id(request_agenda).publish_state(false);
+          id(agenda) = agenda_json;
+          id(mode) = $MODE_AGENDA;
+          id(epaper).update();
+          id(conditional_sleep).execute();

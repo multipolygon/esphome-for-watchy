@@ -1,6 +1,7 @@
 WIFI_SSID: ""
 WIFI_PASSWORD: ""
 OTA_PASSWORD: "asdf1234"
+ENABLE_WEATHER_API: "false"
 WEATHER_KEY: "" # Sign up at https://openweathermap.org/ to get an API key
 WEATHER_CITY_ID: "2158177" # Australia/Melbourne
 UNITS: metric
