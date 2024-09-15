@@ -8,6 +8,7 @@ substitutions:
   <<: !include mdi.yaml
   ID: "1"
   NAME: watchy-v$VERSION-id$ID
+  WAKE_TIME: "5"
   FACE_COUNT: "9"
   MODE_FACES: "0"
   MODE_TIMERS: "1"
@@ -44,7 +45,7 @@ esphome:
           id(alarms).execute();
 
           if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_TIMER) {
-            id(keep_awake) = true;
+            id(sleep_timeout) = $WAKE_TIME;
             if (id(mode) == $MODE_AGENDA) {
               id(mode) = $MODE_FACES;
             }
@@ -59,20 +60,17 @@ esphome:
 
             if (utcnow.hour % 3 == 0 && utcnow.minute == 0) {
               id(request_weather).publish_state(true);
+              id(sleep_timeout) = 2;
               id(wifi_id).enable();
             }
             
             if (now.hour == 3 && now.minute == 0) {
-            // if (true) {
-              id(request_agenda).publish_state(true);
-              id(wifi_id).enable();
+              id(mode) = $MODE_AGENDA;
             }
 
             if (id(mode) == $MODE_FACES
-                && !id(keep_awake)
+                && id(sleep_timeout) == 0
                 && !id(chime)
-                && !id(request_weather).state
-                && !id(request_agenda).state
                 && now.hour >= 9 && now.hour <= 21
             ) {
               auto r = random(1000);
@@ -86,16 +84,14 @@ esphome:
             }
           }
 
-          id(epaper).update();
-          id(buzzer).turn_off();
-
-          if (id(keep_awake) || id(chime)) {
+          if (id(sleep_timeout) != 0 || id(chime)) {
             id(buzzer).turn_on();
             // TODO: How to do the delay below inside lambda?
             // delay(50);
           }
-      - delay: 150ms
-      - lambda: |-
+
+          id(epaper).update();
+
           id(buzzer).turn_off();
           id(conditional_sleep).execute();
 
@@ -132,7 +128,7 @@ display:
       const auto md = m * 100 + d;
       const auto FRIDAY = 6;
 
-      const char *wifiIcon = id(keep_awake) ?
+      const char *wifiIcon = id(sleep_timeout) != 0 ?
         (id(wifi_id).is_disabled() ? mdiEmoticonHappyOutline : (id(wifi_id).is_connected() ? mdiWifi  : mdiWifiOff)) :
         (id(power_saving_mode).state ? mdiSleep : "");
 
@@ -355,7 +351,7 @@ display:
 
           it.printf(0, l, f, TextAlign::TOP_LEFT,
             "Wifi: %s (%d)",
-            (id(wifi_id).is_disabled() ? (id(keep_awake) ? "off-awake" : "off-sleep") : (id(wifi_id).is_connected() ? id(wifi_id).wifi_ssid().c_str() : "n/a")),
+            (id(wifi_id).is_disabled() ? "off" : (id(wifi_id).is_connected() ? id(wifi_id).wifi_ssid().c_str() : "n/a")),
             (id(wifi_id).is_connected() ? id(wifi_id).wifi_rssi() : 0)
           );
           l += lh;
@@ -523,8 +519,10 @@ display:
         int l = t+m+lh+m+m;
         id(next_event_at) = -1;
         int hr_mn_now = now.hour * 100 + now.minute;
+        int event_count = 0;
 
         for (JsonArray elem : doc.as<JsonArray>()) {
+          event_count += 1;
           int hr = elem[0].as<int>();
           int mn = elem[1].as<int>();
           String evt = elem[2].as<String>();
@@ -543,6 +541,10 @@ display:
             id(next_event_at) = hr_mn;
           }
         }
+
+        if (event_count == 0) {
+          id(mode) = $MODE_FACES;
+        }
       }
 
 graphical_display_menu:
@@ -552,6 +554,14 @@ graphical_display_menu:
   mode: rotary
   font: small_font
   items:
+    - type: command
+      text: "Today's Agenda"
+      on_value:
+        then:
+          lambda: |-
+            id(mode) = $MODE_AGENDA;
+            id(wifi_id).enable();
+
     - type: menu
       text: !lambda |-
         if (id(alarm_a_enable).state) {
@@ -620,19 +630,10 @@ graphical_display_menu:
             id(mode) = $MODE_FACES;
             if (id(wifi_id).is_disabled()) {
               id(wifi_id).enable();
-            } else if ($ENABLE_WEATHER_API == true) {
+            } else {
               id(update_weather).execute();
             }
             id(ntp).update();
-
-    - type: command
-      text: "Today's Agenda"
-      on_value:
-        then:
-          lambda: |-
-            id(request_agenda).publish_state(true);
-            id(mode) = $MODE_AGENDA;
-            id(wifi_id).enable();
 
     - type: command
       # Home Assistant example service call.
@@ -662,8 +663,7 @@ binary_sensor:
       max_length: 2s
       then:
         - lambda: |-
-            id(keep_awake) = true;
-            id(sleep_timeout) = 0;
+            id(sleep_timeout) = $WAKE_TIME;
             if (id(alarm_buzzing)) {
               id(alarm_buzzing) = false;
               id(buzzer).turn_off();
@@ -693,8 +693,7 @@ binary_sensor:
       - lambda: |-
           if (id(mode) == $MODE_FACES) {
             id(power_saving_mode).turn_on();
-            id(keep_awake) = false;
-            id(request_weather).publish_state(false);
+            id(sleep_timeout) = 0;
             id(wifi_id).disable();
             id(epaper).update();
             id(conditional_sleep).execute();
@@ -713,8 +712,7 @@ binary_sensor:
       max_length: 2s
       then:
         - lambda: |-
-            id(keep_awake) = true;
-            id(sleep_timeout) = 0;
+            id(sleep_timeout) = $WAKE_TIME;
             if (id(mode) == $MODE_MENU) {
               id(menu).enter();
             } else if (id(mode) == $MODE_TIMERS || id(timers)[0] == 0) {
@@ -738,8 +736,7 @@ binary_sensor:
       delayed_on: 3s
     on_press:
       - lambda: |-
-          id(keep_awake) = true;
-          id(sleep_timeout) = 0;
+          id(sleep_timeout) = $WAKE_TIME;
           if (id(mode) == $MODE_TIMERS) {
             id(mode) = $MODE_TIMERS;
             id(timers)[id(active_timer)] = 0;
@@ -761,8 +758,7 @@ binary_sensor:
       delayed_on: 5s
     on_press:
       - lambda: |-
-          id(keep_awake) = true;
-          id(sleep_timeout) = 0;
+          id(sleep_timeout) = $WAKE_TIME;
           if (id(mode) == $MODE_TIMERS) {
             id(mode) = $MODE_TIMERS;
             id(active_timer) = 0;
@@ -787,8 +783,7 @@ binary_sensor:
       max_length: 2s
       then:
         - lambda: |-
-            id(keep_awake) = true;
-            id(sleep_timeout) = 0;
+            id(sleep_timeout) = $WAKE_TIME;
             if (id(mode) == $MODE_MENU) {
               id(menu).up();
             } else if (id(mode) == $MODE_FACES) {
@@ -810,8 +805,7 @@ binary_sensor:
       delayed_on: 3s
     on_press:
       - lambda: |-
-          id(keep_awake) = true;
-          id(sleep_timeout) = 0;
+          id(sleep_timeout) = $WAKE_TIME;
           if (id(mode) == $MODE_FACES) {
             id(mode) = $MODE_QR;
             id(epaper).update();
@@ -832,8 +826,7 @@ binary_sensor:
       max_length: 2s
       then:
         - lambda: |-
-            id(keep_awake) = true;
-            id(sleep_timeout) = 0;
+            id(sleep_timeout) = $WAKE_TIME;
             if (id(mode) == $MODE_MENU) {
               id(menu).down();
             } else {
@@ -851,8 +844,7 @@ binary_sensor:
       delayed_on: 3s
     on_press:
       - lambda: |-
-          id(keep_awake) = true;
-          id(sleep_timeout) = 0;
+          id(sleep_timeout) = $WAKE_TIME;
           id(epaper).do_full_update();
           id(epaper).update();
 
@@ -869,8 +861,8 @@ binary_sensor:
     platform: template
     publish_initial_state: true
 
-  - id: request_agenda
-    name: Watchy $ID Request Agenda
+  - id: api_connected
+    name: Watchy $ID Connected
     platform: template
     publish_initial_state: true
 
@@ -892,7 +884,7 @@ wifi:
         if (now.hour == 0 && now.minute == 0 || !now.is_valid()) {
           id(ntp).update();
         }
-        if ($ENABLE_WEATHER_API == true && id(request_weather).state) {
+        if (id(request_weather).state) {
           id(update_weather).execute();
         }
 
@@ -908,53 +900,57 @@ script:
     then:
       lambda: |-
         const auto now = id(ntp).now();
+        int x = 0;
 
         if (
           (id(alarm_a_enable).state && int(id(alarm_a_hour).state) == now.hour && int(id(alarm_a_min).state) == now.minute) ||
           (id(alarm_b_enable).state && int(id(alarm_b_hour).state) == now.hour && int(id(alarm_b_min).state) == now.minute)
         ) {
+          x = 3;
+        }
+
+        if (id(next_event_at) != -1) {
+          // Calendar agenda alarms:
+          if (id(next_event_at) == (now.hour + 1) * 100 + now.minute) {
+            x = 1;
+          } else if (id(next_event_at) == now.hour * 100 + now.minute) {
+            x = 1;
+          }
+        }
+
+        if (x != 0) {
           id(alarm_buzzing) = true;
-          id(keep_awake) = true;
-          id(sleep_timeout) = 0;
-        }
-
-        if (id(alarm_buzzing)) {
-          // If this script is called again, turn on the buzzer again:
           id(buzzer).turn_on();
-        }
-
-        // Calendar agenda alarms:
-
-        if (
-          id(next_event_at) != -1 &&
-          (id(next_event_at) == now.hour * 100 + now.minute || id(next_event_at) == (now.hour + 1) * 100 + now.minute)
-        ) {
-          id(buzzer).turn_on();
-          id(mode) = $MODE_AGENDA;
+          if (x > id(sleep_timeout)) {
+            id(sleep_timeout) = x;
+          }
         }
 
   - id: update_weather
     mode: single
     then:
-      - lambda: |-
-          ESP_LOGI("watchy", "Weather HTTP request");
-      # TODO: Add if-condition to test if $WEATHER_KEY has been set in secrets.yaml
-      - http_request.get:
-          # https://esphome.io/components/http_request.html#http-request-get-action
-          # https://openweathermap.org/forecast5
-          url: http://api.openweathermap.org/data/2.5/forecast?cnt=4&id=$WEATHER_CITY_ID&units=$UNITS&lang=$LANG&appid=$WEATHER_KEY
-          headers:
-            Content-Type: application/json
-          capture_response: true
-          max_response_buffer_size: 3kB
-          on_response:
-            then:
-              lambda: |-
-                // TODO: Test if response is 200
-                // ESP_LOGI("watchy", "Weather status %d %ums.", status_code, duration_ms);
-                ESP_LOGI("watchy", "Weather HTTP response");
-                id(parse_weather).execute(body);
-                id(conditional_sleep).execute();
+      - if:
+          condition:
+            lambda: |-
+              return $ENABLE_WEATHER_API == true;
+          then:
+            - lambda: |-
+                ESP_LOGI("watchy", "Weather HTTP request");
+            - http_request.get:
+                # https://esphome.io/components/http_request.html#http-request-get-action
+                # https://openweathermap.org/forecast5
+                url: http://api.openweathermap.org/data/2.5/forecast?cnt=4&id=$WEATHER_CITY_ID&units=$UNITS&lang=$LANG&appid=$WEATHER_KEY
+                headers:
+                  Content-Type: application/json
+                capture_response: true
+                max_response_buffer_size: 3kB
+                on_response:
+                  then:
+                    lambda: |-
+                      // TODO: Test if response is 200
+                      // ESP_LOGI("watchy", "Weather status %d %ums.", status_code, duration_ms);
+                      ESP_LOGI("watchy", "Weather HTTP response");
+                      id(parse_weather).execute(body);
 
   - id: parse_weather
     mode: restart
@@ -997,41 +993,27 @@ script:
     then:
       - if:
           condition:
-            lambda: return id(keep_awake);
+            lambda: return id(sleep_timeout) <= 0;
           then:
-            if:
-              condition:
-                lambda: return id(sleep_timeout) > 5;
-              then:
-                - lambda: |-
-                    id(keep_awake) = false;
-                    id(alarm_buzzing) = false;
-                    if (id(mode) == $MODE_MENU) {
-                      id(mode) = $MODE_FACES;
-                    }
-                - wifi.disable:
-                - switch.turn_off: buzzer
-                - component.update: epaper
-                - deep_sleep.enter: &deep_sleep_duration
-                    sleep_duration: !lambda |-
-                      const auto now = id(ntp).now();
-                      const int clockUpdateInterval = int(id(update_interval_minutes).state);
-                      if (clockUpdateInterval == 0 && id(power_saving_mode).state) {
-                        return 15 * 60 * 1000; // 15 min in ms
-                      } else if (clockUpdateInterval == 0) {
-                        return 1 * 60 * 1000; // 1 min in ms
-                      } else {
-                        return ((clockUpdateInterval - (now.minute % clockUpdateInterval)) * 60 - now.second) * 1000; // ms
-                      }
-          else:
-            if:
-              condition:
-                lambda: return (!id(request_weather).state && !id(request_agenda).state) ||
-                  id(sleep_timeout) > 3;
-              then:
-                - switch.turn_off: buzzer
-                - deep_sleep.enter:
-                    <<: *deep_sleep_duration
+            - lambda: |-
+                id(alarm_buzzing) = false;
+                if (id(mode) == $MODE_MENU) {
+                  id(mode) = $MODE_FACES;
+                }
+            - wifi.disable:
+            - switch.turn_off: buzzer
+            - component.update: epaper
+            - deep_sleep.enter:
+                sleep_duration: !lambda |-
+                  const auto now = id(ntp).now();
+                  const int clockUpdateInterval = int(id(update_interval_minutes).state);
+                  if (clockUpdateInterval == 0 && id(power_saving_mode).state) {
+                    return 15 * 60 * 1000; // 15 min in ms
+                  } else if (clockUpdateInterval == 0) {
+                    return 1 * 60 * 1000; // 1 min in ms
+                  } else {
+                    return ((clockUpdateInterval - (now.minute % clockUpdateInterval)) * 60 - now.second) * 1000; // ms
+                  }
 
 time:
   # https://esphome.io/components/time/index.html
@@ -1058,7 +1040,7 @@ time:
       - seconds: 0
         then:
           - lambda: |-
-              id(sleep_timeout) += 1;
+              id(sleep_timeout) -= 1;
               id(alarms).execute();
               id(epaper).update();
               id(buzzer).turn_off();
@@ -1067,7 +1049,7 @@ time:
         then:
           - lambda: |-
               // Alarm will buzz for 2 minutes if not silenced:
-              if (id(alarm_buzzing) && id(sleep_timeout) <= 2) {
+              if (id(alarm_buzzing)) {
                 id(buzzer).turn_on();
               }
           - delay: 500ms
@@ -1095,9 +1077,6 @@ globals:
   - id: sleep_timeout
     type: int
     initial_value: "0"
-  - id: keep_awake
-    type: boolean
-    initial_value: "false"
   - id: chime
     type: boolean
     initial_value: "false"
@@ -1159,7 +1138,7 @@ font:
   - id: small_font
     file: "fonts/Futura Bold/Futura Bold.otf"
     size: 16
-    glyphs: "@[]<>().:°'-/0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+    glyphs: "@[]<>().:°'’-/0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
       abcdefghijklmnopqrstuvwxyz"
 
   - id: date_font
@@ -1442,15 +1421,17 @@ api:
   encryption:
     key: $HOME_ASSISTANT_API_KEY
   on_client_connected:
-    - lambda: ESP_LOGI("watchy", "API connected!");
+    - lambda: |-
+        ESP_LOGI("watchy", "API connected!");
+        id(api_connected).publish_state(true);
   actions:
     - service: set_weather
       variables:
         weather_json: string
       then:
         lambda: |-
+          ESP_LOGI("watchy", "set_weather");
           id(parse_weather).execute(weather_json);
-          id(conditional_sleep).execute();
 
     - service: set_agenda
       variables:
@@ -1458,8 +1439,4 @@ api:
       then:
         lambda: |-
           ESP_LOGI("watchy", "set_agenda");
-          id(request_agenda).publish_state(false);
           id(agenda) = agenda_json;
-          id(mode) = $MODE_AGENDA;
-          id(epaper).update();
-          id(conditional_sleep).execute();
