@@ -293,21 +293,18 @@ action:
       end_date_time: "{{ today_at(\"23:59:59\") }}"
   - alias: Parse data
     variables:
-      simplified: >
+      simplified: |
         [
-        {% for i in (agenda['calendar.main'].events + agenda['calendar.birthdays'].events) | sort(attribute="start") %}
-        {{ [as_datetime(i.start).hour, as_datetime(i.start).minute, (i.summary | trim) ] | to_json }}
-        {{ "," if not loop.last }}
-        {% endfor %}
+          {% for i in (agenda['calendar.main'].events + agenda['calendar.birthdays'].events) | sort(attribute="start") %}
+            {% set start = as_datetime(i.start) %}
+            {% if start.day == now().day %}
+              {{ [start.hour * 60 + start.minute, (i.summary | trim)] | to_json }},
+            {% endif %}
+          {% endfor %}
         ]
-  - if:
-      - condition: template
-        value_template: "{{ simplified | list | length > 0 }}"
-    then:
-      - data_template:
-          agenda_json: >-
-            {{ simplified }}
-        action: esphome.watchy_v3_id0_set_agenda
+  - data_template:
+      agenda_json: "{{ simplified | to_json }}"
+    action: esphome.watchy_v3_id0_set_agenda
 mode: single
 ```
 

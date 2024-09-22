@@ -12,6 +12,7 @@ const char *mdiBatteryMedium = "\U000F12A2";
 const char *mdiBatteryOutline = "\U000F008E";
 const char *mdiBatteryRemoveOutline = "\U000F17E9";
 const char *mdiBee = "\U000F0FA1";
+const char *mdiBellBadgeOutline = "\U000F0178";
 const char *mdiBellOutline = "\U000F009C";
 const char *mdiBellRingOutline = "\U000F009F";
 const char *mdiBicycle = "\U000F109C";
