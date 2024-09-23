@@ -179,6 +179,22 @@ int getClkY(int hour)
   return getClkXY(hour, 1);
 };
 
+int getClkXY24(int hour, int xy)
+{
+  double hr = ((hour % 24) / 24.0 * 360.0 + 90.0) * (M_PI / 180.0);
+  return 100 + 90 * (xy == 0 ? cos(hr) : sin(hr));
+};
+
+int getClkX24(int hour)
+{
+  return getClkXY24(hour, 0);
+};
+
+int getClkY24(int hour)
+{
+  return getClkXY24(hour, 1);
+};
+
 const char *sky[] = {
     mdiStarOutline,
     mdiStarShootingOutline,
