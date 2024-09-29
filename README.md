@@ -4,7 +4,7 @@ Main source code file is: [./watchy.yaml](./watchy.yaml)
 
 [Watchy](https://watchy.sqfmi.com/) is an [open-hardware](https://watchy.sqfmi.com/docs/hardware), ESP32 wrist watch with e-paper display designed by SQFMI.
 
-This project is a complete working firmware, built upon [ESPHome](https://esphome.io/), with [single-file source-code](./watchy.yaml), full v3 hardware support, weather forecast, multiple faces, [beautiful pixel-art MDI icons](https://pictogrammers.com/library/mdi/), 2x alarms, stop-watch timers, low-power-mode, firmware updatable over wifi and easy Home Assistant customisation. It is a complete, self-contained, drop-in replacement for the original Watchy firmware.
+This project is a complete working firmware, built upon [ESPHome](https://esphome.io/), with [single-file source-code](./watchy.yaml), full v3 hardware support, weather forecast, multiple faces, daily calendar agenda, [pixel-art MDI icons](https://pictogrammers.com/library/mdi/), 2x alarms, stop-watch timers, low-power-mode, firmware updatable over wifi and easy Home Assistant customisation. It is a complete, from-scratch, independent, drop-in replacement for the original Watchy firmware.
 
 ## Faces
 
@@ -19,120 +19,37 @@ Included faces (cycle through them using the top-right button):
 <img src="doc/faces/3.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-## Install / Flash
+## Daily Calendar Agenda with Notifications
 
-1. [Install ESPHome compiler](https://esphome.io/guides/getting_started_command_line) and optional [VSCode extension](https://marketplace.visualstudio.com/items?itemName=ESPHome.esphome-vscode)
-1. Sign up at https://openweathermap.org/ to get an API key
-1. `cp config-example.yaml config.yaml`
-1. Edit your `config.yaml` file
-1. Connect your Watchy to USB and run `esphome run watchy.yaml`
-1. Thats it!
-
-## About ESPHome
-
-[ESPHome](https://esphome.io/): "is a system to control your microcontrollers by simple yet powerful configuration files and control them remotely through Home Automation systems."
-
-As this project is based on ESPHome, there is excellent, existing documentation and community support for all the submodules and their many customisation options. For example: [wifi with multiple networks](https://esphome.io/components/wifi.html#connecting-to-multiple-networks), [display graphics and rendering](https://esphome.io/components/display/), [fonts and icons](https://esphome.io/components/display/fonts.html), [ePaper drivers](https://esphome.io/components/display/waveshare_epaper.html), [GPIO](https://esphome.io/components/binary_sensor/gpio), [button actions](https://esphome.io/components/binary_sensor/), [NTP time-sync](https://esphome.io/components/time/sntp.html), [time events](https://esphome.io/components/time/#on-time-trigger) and [HTTP API calls](https://esphome.io/components/http_request.html), [ESP32 deep-sleep](https://esphome.io/components/deep_sleep.html), [wireless firmware updates (OTA)](https://esphome.io/components/ota/), [captive portal](https://esphome.io/components/captive_portal.html), [battery voltage ADC](https://esphome.io/components/sensor/adc.html) and many more.
-
-## The Watch
-
-### Watchy hardware v3 - NEW 2024!
-
-- Watchy v3: [./watchy.yaml](./watchy.yaml)
-
-Update: New (2024) v3 module arrived via [Mouser Electronics](https://au.mouser.com/ProductDetail/SQFMI/SQFMI-WATCHY-10?qs=DRkmTr78QARN9VSJRzqRxw%3D%3D). It has hardware changes including ESP32-S3, RTC and [rearranged pins](https://github.com/sqfmi/Watchy/compare/667d86737dd3dcedf67d83cf69553b28f4e1f38b..master).
+Sync daily agenda via Home Assistant [CalDAV](https://www.home-assistant.io/integrations/caldav/) or other integrations. See HA Automation configuration at end of this document.
 
 <div>
-<img src="doc/mods/wrist-side-profile.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/agenda/full-page-agenda.jpeg" title="The agenda overview screen. Current events happening now are highlighted with dark background. The horizontal lines indicates the current time of day and the next upcoming event." style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/agenda/event-notification.jpeg" title="A the time of an event, 10-min before and 60-min before, a notification pop-up is shown with a buzzer alarm. The upcoming event has the time highlighted with a black background." style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/agenda/next-event.jpeg" title="The next upcoming event is shown above the time on the digital face." style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/agenda/all-day-event.jpeg" title="If there are no other upcoming events, the all-day event is shown above the time on the digital face." style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-<div>
-<img src="doc/v3/01.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/v3/02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/v3/03.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/v3/04.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/v3/05.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/v3/06.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-</div>
+A daily agenda summary will show once per day on first sync after midnight. (Dismiss summary with upper-left button.)
 
-### Watchy hardware v2
+Notifications with buzzer will pop-up at event start-time, 10 minutes before and 60 minutes before. Events with zero length (same start and end time) will only notify at the start-time. (Dismiss notifications with upper-left button.)
 
-A backwards compatible version is also available for older v2 hardware: [./v2-watchy.yaml](./v2-watchy.yaml)
+Press and hold the upper-right button for 3s to see the agenda overview.
 
-## Design Approach
+(Hover over the images above for alt-text explanations.)
 
-### Low Power Usage
+## Weather
 
-A [minimalist](https://en.wikipedia.org/wiki/Minimalism), low-distraction, low-interaction, unobtrusive and wearable device.
-
-This is primarily a watch, for showing the time, with a few extra "read-only", "at-a-glance" watch-like complications such as a weather forecast.
-
-Wifi is utilised primarily for read-only connectivity features such as updating accurate internet time, DST adjustments and a weather forecast. It is a truly "automatic" watch!
-
-Wifi, which uses a lot of power, will only activate automatically 4 times a day.
-
-In the future, I hope to sync with a calendar once a day.
-
-### Minimal Interactivity
-
-Interactive features such as the stop-watch and Home Assistant (or MQTT) controls should be used sparingly because the battery is small and the display is slow.
-
-Multiple buttons and long-press buttons remain free for your own extensions.
-
-### No Onboard User Settings UI
-
-Intentionally, this project does not include any on-watch user settings screens or user configuration. The idea is that the ESPHome YAML file is simple and easy enough for it to be edited directly, and re-flashed to the ESP32 device. **The YAML _is_ the settings UI and the main feature of an open-source, programmable, WiFi watch is that it is easily reprogrammable over WiFi.**
-
-## User Guide
-
-### Buttons
-
-<!-- <img src="doc/buttons.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" /> -->
-
-#### Upper Left :: Power/Home
-
-- Press: Power On / Silence Alarm
-- 2nd Press: Home / Wifi On / ePaper Refresh
-- Long Press (3s): Set power-saving mode and go to sleep
-
-#### Upper Right :: Cycle Faces
-
-- Press: Cycle watch faces (digital, hands, roman, info, etc) or QR Codes
-- Long Press (3s): Toggle QR Codes mode
-
-#### Lower Left :: Timers
-
-- Press: Show Timers
-- 2nd Press: Start a new timer (up to 5 timers)
-- Long Press (3s): Cancel last active timer
-- Long Press (5s): Clear all timers
-
-#### Lower Right :: Menu
-
-- Press: Settings Menu
-- Long Press (3s): ePaper Refresh
-
-When in Settings Menu mode:
-
-- Upper Right Button: Up
-- Lower Right Button: Down
-- Lower Left Button: Select/Save
-- Upper Left Button: Exit the menu
-
-<div>
-<img src="doc/menu.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
-</div>
-
-### Weather
-
-The watch shows a weather forecast over the upcoming 12 hours. This is a simple, practical, human-ergonomics amount of time for planning ahead using a wrist watch.
+The watch shows a weather forecast over the upcoming 12 hours. This is a simple, practical, human-ergonomics amount of time for planning ahead using a wrist watch. Max-temp is currently based on `feels_like` forecast over 12 hours.
 
 <div>
 <img src="doc/weather01.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/weather02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-### Alarms
+The weather forecast can be sourced from any Home Assistant weather integration via an automation or directly from OpenWeatherMap.org.
+
+## Alarms
 
 There is the option to enable two separate alarms via the menu. Choose the alarm from the menu then set hours and minutes.
 
@@ -148,7 +65,7 @@ To silence a buzzing alarm, press the upper-left button.
   <img src="doc/alarm-enabled.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-### Timers Operation
+## Timers
 
 1. Press the lower-left button to show the timers page
 1. Press again to start a new timer, added to the bottom (D)
@@ -175,7 +92,7 @@ When the page is full, a button press will discard the oldest timer and start a 
 <img src="doc/18.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-### Weather Faces
+## Weather Faces
 
 These are useful for wall-mounting older/spare Watchy modules:
 
@@ -184,7 +101,7 @@ These are useful for wall-mounting older/spare Watchy modules:
 <img src="doc/faces/4.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-### QR-Code Contact Card / ID Badge
+## QR-Code Contact Card / ID Badge
 
 You know... just in case you accidentally find yourself at a meet-up or conference without a phone, tablet or business card and can't remember your own email or website addresses, don't panic, you have your watch!
 
@@ -196,6 +113,110 @@ vCard, Website and RSS URL can be set in `secrets.yaml`.
 <img src="doc/qr-vcard.jpeg" title="vCard" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/qr-web.jpeg" title="Website" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/qr-rss.jpeg" title="RSS" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
+
+## The Watch
+
+### Watchy hardware v3 - NEW 2024!
+
+- Watchy v3: [./watchy.yaml](./watchy.yaml)
+
+Update: New (2024) v3 module arrived via [Mouser Electronics](https://au.mouser.com/ProductDetail/SQFMI/SQFMI-WATCHY-10?qs=DRkmTr78QARN9VSJRzqRxw%3D%3D). It has hardware changes including ESP32-S3, RTC and [rearranged pins](https://github.com/sqfmi/Watchy/compare/667d86737dd3dcedf67d83cf69553b28f4e1f38b..master).
+
+<div>
+<img src="doc/mods/wrist-side-profile.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
+
+<div>
+<img src="doc/v3/01.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/v3/02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/v3/03.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/v3/04.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/v3/05.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/v3/06.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
+
+### Watchy hardware v2
+
+A backwards compatible version is also available for older v2 hardware: [./v2-watchy.yaml](./v2-watchy.yaml)
+
+## About ESPHome
+
+[ESPHome](https://esphome.io/): "is a system to control your microcontrollers by simple yet powerful configuration files and control them remotely through Home Automation systems."
+
+As this project is based on ESPHome, there is excellent, existing documentation and community support for all the submodules and their many customisation options. For example: [wifi with multiple networks](https://esphome.io/components/wifi.html#connecting-to-multiple-networks), [display graphics and rendering](https://esphome.io/components/display/), [fonts and icons](https://esphome.io/components/display/fonts.html), [ePaper drivers](https://esphome.io/components/display/waveshare_epaper.html), [GPIO](https://esphome.io/components/binary_sensor/gpio), [button actions](https://esphome.io/components/binary_sensor/), [NTP time-sync](https://esphome.io/components/time/sntp.html), [time events](https://esphome.io/components/time/#on-time-trigger) and [HTTP API calls](https://esphome.io/components/http_request.html), [ESP32 deep-sleep](https://esphome.io/components/deep_sleep.html), [wireless firmware updates (OTA)](https://esphome.io/components/ota/), [captive portal](https://esphome.io/components/captive_portal.html), [battery voltage ADC](https://esphome.io/components/sensor/adc.html) and many more.
+
+## Design Approach
+
+### Low Power Usage
+
+A [minimalist](https://en.wikipedia.org/wiki/Minimalism), low-distraction, low-interaction, unobtrusive and wearable device.
+
+This is primarily a watch, for showing the time, with a few extra "read-only", "at-a-glance" watch-like complications such as a weather forecast.
+
+Wifi is utilised primarily for read-only connectivity features such as updating accurate internet time, DST adjustments and a weather forecast. It is a truly "automatic" watch!
+
+Wifi, which uses a lot of power, will only activate automatically 4 times a day.
+
+In the future, I hope to sync with a calendar once a day.
+
+### Minimal Interactivity
+
+Interactive features such as the stop-watch and Home Assistant (or MQTT) controls should be used sparingly because the battery is small and the display is slow.
+
+Multiple buttons and long-press buttons remain free for your own extensions.
+
+### No Onboard User Settings UI
+
+Intentionally, this project does not include any on-watch user settings screens or user configuration. The idea is that the ESPHome YAML file is simple and easy enough for it to be edited directly, and re-flashed to the ESP32 device. **The YAML _is_ the settings UI and the main feature of an open-source, programmable, WiFi watch is that it is easily reprogrammable over WiFi.**
+
+## Install / Flash
+
+1. [Install ESPHome compiler](https://esphome.io/guides/getting_started_command_line) and optional [VSCode extension](https://marketplace.visualstudio.com/items?itemName=ESPHome.esphome-vscode)
+1. Sign up at https://openweathermap.org/ to get an API key
+1. `cp config-example.yaml config.yaml`
+1. Edit your `config.yaml` file
+1. Connect your Watchy to USB and run `esphome run watchy.yaml`
+1. Thats it!
+
+## User Guide
+
+### Buttons
+
+<!-- <img src="doc/buttons.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" /> -->
+
+#### Upper Left :: Power/Home
+
+- Press: Power On / Silence Alarm
+- 2nd Press: Home / Wifi On
+- Long Press (3s): Set power-saving mode and go to sleep
+
+#### Upper Right :: Cycle Faces
+
+- Press: Cycle watch faces (digital, hands, roman, info, etc) or QR Codes
+- Long Press (3s): Show daily agenda
+
+#### Lower Left :: Timers
+
+- Press: Show Timers
+- 2nd Press: Start a new timer (up to 5 timers)
+- Long Press (3s): Cancel last active timer
+- Long Press (5s): Clear all timers
+
+#### Lower Right :: Menu
+
+- Press: Show Settings menu
+- Long Press (3s): ePaper Refresh
+
+When in Settings menu:
+
+- Upper Right Button: Up
+- Lower Right Button: Down
+- Lower Left Button: Select/Save
+- Upper Left Button: Exit the menu
+
+<div>
+<img src="doc/menu.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
 </div>
 
 ## Installation Notes
@@ -269,6 +290,8 @@ Instructions:
 
 <https://www.home-assistant.io/integrations/caldav/>
 
+### Daily agenda automation
+
 Then create an Automation to send agenda to Watchy:
 
 ```
@@ -309,9 +332,13 @@ action:
 mode: single
 ```
 
+### Weather forecast automation
+
 Create an automation to send weather to Watchy:
 
 (This automation fetches and sends weather from OpenWeatherMap but it could use any Home Assistant weather forecast source and format it OpenWeatherMap JSON format.)
+
+Add to main `configuration.yaml`:
 
 ```
 rest_command:
@@ -319,6 +346,8 @@ rest_command:
     # http://api.openweathermap.org/data/2.5/forecast?cnt=4&id=2158177&units=metric&lang=en&appid=SECRET
     url: !secret openweathermap_url
 ```
+
+Create an automation:
 
 ```
 alias: Watchy Weather
