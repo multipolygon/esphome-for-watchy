@@ -297,8 +297,9 @@ action:
         [
           {% for i in (agenda['calendar.main'].events + agenda['calendar.birthdays'].events) | sort(attribute="start") %}
             {% set start = as_datetime(i.start) %}
+            {% set end = as_datetime(i.end) %}
             {% if start.day == now().day %}
-              {{ [start.hour * 60 + start.minute, (i.summary | trim)] | to_json }},
+              {{ [(start.hour * 60 + start.minute), (end.hour * 60 + end.minute) if end.day == now().day else (24 * 60), (i.summary | trim)] | to_json }},
             {% endif %}
           {% endfor %}
         ]

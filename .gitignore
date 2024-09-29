@@ -5,13 +5,13 @@ config.yaml
 demo.yaml
 notes.md
 
-
 fonts/mdi/*
 !fonts/mdi/LICENSE
 !fonts/mdi/fonts
 fonts/mdi/fonts/*
 !fonts/mdi/fonts/materialdesignicons-webfont.woff
 
-
 node_modules
 .env*
+
+watchy copy*.yaml
