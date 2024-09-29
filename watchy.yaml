@@ -8,7 +8,7 @@ substitutions:
   <<: !include mdi.yaml
   ID: "1"
   NAME: watchy-v$VERSION-id$ID
-  WAKE_TIME: "3"
+  WAKE_TIME: "5"
   FACE_COUNT: "9"
   MODE_FACES: "0"
   MODE_TIMERS: "1"
@@ -31,6 +31,7 @@ esphome:
   includes:
     - mdi.h
     - icons.h
+    - util.h
   on_boot:
     then:
       - delay: 1ms
@@ -130,9 +131,30 @@ display:
       const auto BLACK = Color::WHITE;
       const auto WHITE = Color::BLACK;
 
-      const auto now = id(ntp).now();
-      const int tnow = now.hour * 60 + now.minute;
       const auto epochTime = id(ntp).timestamp_now();
+      const auto realNow = id(ntp).now();
+
+      // By default, the watch will update once a minute and shows accurate (NTP) time.
+      // However, that can use more power than is neccessary and, as a matter of opinion,
+      // a slightly fast watch is a good thing and a pre-rounded, slow-update watch is more calming.
+      // Who doesn't do some time-rounding in one's head anyway? If its 12:43 you think 12:45.
+      // When someone asks you the time and its 12:42 you say "12:45" or "quarter to 1".
+      // When the watch is in power-saving mode or set to 5 or 10 minute update intervals,
+      // the epaper display updates will only occur every 5 or 10 minutes.
+      // So this code here will set `now` to a fast-forwarded time and then update the epaper.
+      // The result is a watch that is up to 5/10 minutes fast, but never behind.
+      const int sleepTimeSeconds = id(sleep_timeout) > 0 ? 0 :
+        calcSleepTimeSeconds(
+          id(power_saving_mode).state,
+          id(clock_interval_minutes).state,
+          realNow
+        );
+      const auto now = sleepTimeSeconds == 0 ?
+        realNow :
+        // https://esphome.io/api/structesphome_1_1_e_s_p_time#a15c3bfe41e5c836695602e95225e5541
+        esphome::ESPTime::from_epoch_local(epochTime + sleepTimeSeconds);
+      const int tnow = now.hour * 60 + now.minute;
+
       const auto weatherExpiryTime = id(weather_times)[3];
 
       const auto m = now.month;
@@ -503,7 +525,7 @@ display:
         it.print(w + 8, h + 8, id(mdi_small), TextAlign::BOTTOM_RIGHT, "$mdiArrowDownThin");
         it.print(0 - 2, h + 4, id(mdi_small), TextAlign::BOTTOM_LEFT, "$mdiCheckCircleOutline");
         it.print(0 - 5, 0 - 3, id(mdi_small), TextAlign::TOP_LEFT, "$mdiArrowLeftTop");
-        it.menu(30, 2, id(menu), w, h-4);
+        it.menu(28, 2, id(menu), w, h-4);
 
       } else if (id(mode) == $MODE_DP) {
         id(mode) = $MODE_FACES;
@@ -694,25 +716,6 @@ graphical_display_menu:
           text: "Minute"
           number: alarm_b_min
 
-    - type: switch
-      text: Power save
-      switch: power_saving_mode
-      immediate_edit: true
-
-    - text: "Clock interval"
-      number: clock_interval_minutes
-      type: number
-      format: "%2.0f"
-      value_lambda: |-
-        return (id(clock_interval_minutes).state == 0 ? "1" : std::to_string(int(id(clock_interval_minutes).state))) + "m";
-
-    - type: command
-      text: "Today's Agenda"
-      on_value:
-        then:
-          lambda: |-
-            id(mode) = $MODE_AGENDA;
-
     - type: command
       text: Refresh weather
       on_value:
@@ -727,6 +730,25 @@ graphical_display_menu:
               id(ntp).update();
               id(epaper).update();
             }
+
+    - type: command
+      text: "Today's Agenda"
+      on_value:
+        then:
+          lambda: |-
+            id(mode) = $MODE_AGENDA;
+
+    - type: switch
+      text: Power save
+      switch: power_saving_mode
+      immediate_edit: true
+
+    - text: "Clock interval"
+      number: clock_interval_minutes
+      type: number
+      format: "%2.0f"
+      value_lambda: |-
+        return (id(clock_interval_minutes).state == 0 ? "1" : std::to_string(int(id(clock_interval_minutes).state))) + "m";
 
     - type: command
       text: "QR Contact Card"
@@ -1161,12 +1183,15 @@ script:
             - deep_sleep.enter:
                 # TODO: How to call id(deep_sleep).enter() with sleep_duration in C++?
                 sleep_duration: !lambda |-
-                  const auto now = id(ntp).now();
-                  const int clockUpdateInterval = id(power_saving_mode).state ? 10 : int(id(clock_interval_minutes).state);
-                  if (clockUpdateInterval == 0) {
-                    return 1 * 60 * 1000; // 1 min in ms
+                  const int s = calcSleepTimeSeconds(
+                    id(power_saving_mode).state,
+                    id(clock_interval_minutes).state,
+                    id(ntp).now()
+                  );
+                  if (s == 0) {
+                    return 1 * 60 * 1000; // milliseconds
                   } else {
-                    return ((clockUpdateInterval - (now.minute % clockUpdateInterval)) * 60 - now.second) * 1000; // ms
+                    return s * 1000; // milliseconds
                   }
 
 time:
