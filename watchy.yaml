@@ -6,10 +6,8 @@ substitutions:
   <<: !include config.yaml
   <<: !include pins-v3.yaml
   <<: !include mdi.yaml
-  ID: "1"
-  NAME: watchy-v$VERSION-id$ID
-  WAKE_TIME: "5"
-  FACE_COUNT: "9"
+  WAKE_TIME: "3"
+  FACE_COUNT: "8"
   MODE_FACES: "0"
   MODE_TIMERS: "1"
   MODE_MENU: "2"
@@ -17,6 +15,7 @@ substitutions:
   MODE_DP: "4"
   MODE_WUN: "5"
   MODE_AGENDA: "6"
+  MODE_DEVICE_INFO: "7"
   AGENDA_REMINDER_1: "60" # min
   AGENDA_REMINDER_2: "10" # min
   AGENDA_JSON_BYTES: "1024"
@@ -27,7 +26,10 @@ logger:
 
 esphome:
   # https://esphome.io/components/esphome.html#esphome-core-configuration
-  name: $NAME
+  name: watchy
+  name_add_mac_suffix: true
+  friendly_name: Watchy
+  area: Watchy
   includes:
     - mdi.h
     - icons.h
@@ -54,11 +56,15 @@ esphome:
             || esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_UNDEFINED && id(is_charging).state
           ) {
             id(sleep_timeout) = $WAKE_TIME;
-            id(power_saving_mode).turn_off();
-            if (id(ntp).utcnow().timestamp >= id(weather_times)[0]) {
+            if (utcnow.timestamp >= id(weather_times)[0]) {
               id(request_weather).turn_on();
             }
-            id(wi_fi).enable();
+            if (id(power_saving_mode).state) {
+              id(power_saving_mode).turn_off();
+              if (id(request_weather).state) {
+                id(wi_fi).enable();
+              }
+            }
             id(buzzer).turn_on();
           }
 
@@ -221,7 +227,6 @@ display:
         const int FACE_HANDS_ROMAN_SMALL = 5;
         const int FACE_HUGE_WEATHER_ICON = 6;
         const int FACE_QUAD_WEATHER_ICONS = 7;
-        const int FACE_INFO_DEBUG = 8;
 
         if (id(face) == FACE_DIGITAL_24 || id(face) == FACE_DIGITAL_12) {
 
@@ -233,7 +238,7 @@ display:
           if (id(face) == FACE_DIGITAL_12) {
             hour = hour % 12;
             if (hour == 0) { hour = 12; }
-            it.print(w-5, h/2+46, id(small_font), TextAlign::CENTER_RIGHT, now.hour < 12 ? "AM" : "PM");
+            it.print(w-2, h/2+46, id(small_font), TextAlign::CENTER_RIGHT, now.hour < 12 ? "AM" : "PM");
           }
           if (hour <= 9) {
             it.printf(5, h/2, id(mdi), TextAlign::CENTER_LEFT, "%s", significantDateIcon);
@@ -372,63 +377,11 @@ display:
           it.printf(w*1/4, h/2, id(mdi_small), TextAlign::CENTER, "%s", leftStatusIcons);
           it.printf(w*3/4, h/2, id(mdi_small), TextAlign::CENTER, "%s", rightStatusIcons);
 
-        } else if (id(face) == FACE_INFO_DEBUG) {
-
-          it.printf(w/2 - 22, 0, id(mdi_weather), TextAlign::TOP_RIGHT, "%s%s",
-            weatherIcons[id(weather_codes)[0]],
-            weatherIcons[id(weather_codes)[1]]
-          );
-
-          it.printf(w/2, 0, id(mdi), TextAlign::TOP_CENTER, "%s",
-            sky[random(skyLen)]
-          );
-
-          it.printf(w/2 + 22, 0, id(mdi_weather), TextAlign::TOP_LEFT, "%s%s",
-            weatherIcons[id(weather_codes)[2]],
-            weatherIcons[id(weather_codes)[3]]
-          );
-
-          int l = 34;
-          const int lh = 18;
-          const auto f = id(small_font);
-
-          it.print(0, l, f, TextAlign::TOP_LEFT, "$NAME");
-          l += lh;
-
-          it.strftime(0, l, f, TextAlign::TOP_LEFT , "%H:%M %a %d %b", now);
-          l += lh;
-
-          if (id(weather_temp_max) != -1000.0) {
-            it.printf(0, l, f, TextAlign::TOP_LEFT, "%.0f° to %.0f° (t%+.1fh)",
-              id(weather_temp_min), id(weather_temp_max),
-              float(epochTime - id(weather_times)[0]) / 60.0 / 60.0
-            );
-          }
-          l += lh;
-
-          it.printf(0, l, f, TextAlign::TOP_LEFT,
-            "Wifi: %s (%d)",
-            (id(wi_fi).is_disabled() ? "off" : (id(wi_fi).is_connected() ? id(wi_fi).wifi_ssid().c_str() : "n/a")),
-            (id(wi_fi).is_connected() ? id(wi_fi).wifi_rssi() : 0)
-          );
-          l += lh;
-
-          it.printf(0, l, f, TextAlign::TOP_LEFT, "Battery: %.02fV", id(battery).state);
-          l += lh;
-
-          it.printf(0, l, f, TextAlign::TOP_LEFT, "Wakeup cause: %d", esp_sleep_get_wakeup_cause());
-          l += lh;
-
-          for (int x=-1*random(10); x<=w+20; x+=24) {
-            it.printf(x, h+6, id(mdi), TextAlign::BOTTOM_LEFT, "%s", city[random(cityLen)]);
-          }
-
         } else if (id(face) == FACE_HUGE_WEATHER_ICON) {
 
           if (id(weather_temp_max) != -1000.0 && epochTime <= weatherExpiryTime) {
             it.printf(0, 0, id(date_font), TextAlign::TOP_LEFT, "%.0f°", id(weather_temp_max));
           }
-
 
           for (int x=0; x<=3 && epochTime >= id(weather_times)[x-1]; ++x) {
             if (epochTime <= id(weather_times)[x]) {
@@ -465,6 +418,58 @@ display:
 
           it.print(w, 0, id(mdi_small), TextAlign::TOP_RIGHT, wifiIcon);
         }
+
+      } else if (id(mode) == $MODE_DEVICE_INFO) {
+
+          it.printf(w/2 - 22, 0, id(mdi_weather), TextAlign::TOP_RIGHT, "%s%s",
+            weatherIcons[id(weather_codes)[0]],
+            weatherIcons[id(weather_codes)[1]]
+          );
+
+          it.printf(w/2, 0, id(mdi), TextAlign::TOP_CENTER, "%s",
+            sky[random(skyLen)]
+          );
+
+          it.printf(w/2 + 22, 0, id(mdi_weather), TextAlign::TOP_LEFT, "%s%s",
+            weatherIcons[id(weather_codes)[2]],
+            weatherIcons[id(weather_codes)[3]]
+          );
+
+          int l = 34;
+          const int lh = 18;
+          const auto f = id(small_font);
+
+          it.strftime(0, l, f, TextAlign::TOP_LEFT , "%H:%M %a %d %b", now);
+          l += lh;
+
+          if (id(weather_temp_max) != -1000.0) {
+            it.printf(0, l, f, TextAlign::TOP_LEFT, "%.0f° to %.0f° (t%+.1fh)",
+              id(weather_temp_min), id(weather_temp_max),
+              float(epochTime - id(weather_times)[0]) / 60.0 / 60.0
+            );
+          }
+          l += lh;
+
+          it.printf(0, l, f, TextAlign::TOP_LEFT, "%s", id(mac_address).state.c_str());
+          l += lh;
+
+          it.printf(0, l, f, TextAlign::TOP_LEFT,
+            "Wifi: %s (%d)",
+            (id(wi_fi).is_disabled() ? "off" : (id(wi_fi).is_connected() ? id(wi_fi).wifi_ssid().c_str() : "n/a")),
+            (id(wi_fi).is_connected() ? id(wi_fi).wifi_rssi() : 0)
+          );
+          l += lh;
+
+          it.printf(0, l, f, TextAlign::TOP_LEFT, "Battery: %.02fV", id(battery).state);
+          l += lh;
+
+          it.printf(0, l, f, TextAlign::TOP_LEFT, "Wakeup cause: %d", esp_sleep_get_wakeup_cause());
+          l += lh;
+
+          for (int x=-1*random(10); x<=w+20; x+=24) {
+            it.printf(x, h+6, id(mdi), TextAlign::BOTTOM_LEFT, "%s", city[random(cityLen)]);
+          }
+
 
       } else if (id(mode) == $MODE_TIMERS) {
 
@@ -521,22 +526,25 @@ display:
 
       } else if (id(mode) == $MODE_MENU) {
 
+        it.menu(28, 2, id(menu), w, h-4);
         it.print(w + 8, 0 - 5, id(mdi_small), TextAlign::TOP_RIGHT, "$mdiArrowUpThin");
         it.print(w + 8, h + 8, id(mdi_small), TextAlign::BOTTOM_RIGHT, "$mdiArrowDownThin");
         it.print(0 - 2, h + 4, id(mdi_small), TextAlign::BOTTOM_LEFT, "$mdiCheckCircleOutline");
         it.print(0 - 5, 0 - 3, id(mdi_small), TextAlign::TOP_LEFT, "$mdiArrowLeftTop");
-        it.menu(28, 2, id(menu), w, h-4);
 
       } else if (id(mode) == $MODE_DP) {
+        
         id(mode) = $MODE_FACES;
         it.print(w/2, h/2, id(date_font), TextAlign::BOTTOM_CENTER, "DON'T");
         it.print(w/2, h/2, id(date_font), TextAlign::TOP_CENTER, "PANIC!");
 
       } else if (id(mode) == $MODE_WUN) {
+        
         id(mode) = $MODE_FACES;
         it.print(0, 0, id(small_font), TextAlign::TOP_LEFT, "Wake up, Neo...");
 
       } else if (id(mode) == $MODE_QR) {
+        
         auto qr = id(qr_vcard);
         const char *qrModeIcon = mdiAccountBox;
 
@@ -561,6 +569,7 @@ display:
       }
 
       if (id(mode) == $MODE_AGENDA || (id(alarm_buzzing) && id(agenda_alarm_time) != -1)) {
+        
         if (id(mode) == $MODE_AGENDA) {
           it.printf(0, 0, id(mdi_small), TextAlign::TOP_LEFT, "%s", leftStatusIcons);
           it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT, "%s", rightStatusIcons);
@@ -658,6 +667,7 @@ display:
             it.printf(w-m*2, l-lh, id(small_font), TextAlign::TOP_RIGHT, "+%d", overLimit);
           }
         }
+
       }
 
 graphical_display_menu:
@@ -667,14 +677,14 @@ graphical_display_menu:
   mode: rotary
   font: small_font
   items:
-    - type: menu
-      text: !lambda |-
+    - text: !lambda |-
         if (id(alarm_a_enable).state) {
           char buffer[20];
           snprintf(buffer, 20, "Alarm A (%.0f:%02.0f)", id(alarm_a_hour).state, id(alarm_a_min).state);
           return buffer;
         }
         return "Alarm A (Off)";
+      type: menu
       items:
         - type: back
           text: "<< [Alarm A]"
@@ -694,19 +704,19 @@ graphical_display_menu:
           text: "Minute"
           number: alarm_a_min
 
-    - type: menu
-      text: !lambda |-
+    - text: !lambda |-
         if (id(alarm_b_enable).state) {
           char buffer[20];
           snprintf(buffer, 20, "Alarm B (%.0f:%02.0f)", id(alarm_b_hour).state, id(alarm_b_min).state);
           return buffer;
         }
         return "Alarm B (Off)";
+      type: menu
       items:
-        - type: back
-          text: "<< [Alarm B]"
-        - type: switch
-          text: "Enable"
+        - text: "<< [Alarm B]"
+          type: back
+        - text: "Enable"
+          type: switch
           switch: alarm_b_enable
           immediate_edit: true
         - <<: *alarmItem
@@ -716,8 +726,15 @@ graphical_display_menu:
           text: "Minute"
           number: alarm_b_min
 
-    - type: command
-      text: Refresh weather
+    - text: Today's agenda
+      type: command
+      on_value:
+        then:
+          lambda: |-
+            id(mode) = $MODE_AGENDA;
+
+    - text: Refresh weather
+      type: command
       on_value:
         then:
           lambda: |-
@@ -726,41 +743,52 @@ graphical_display_menu:
             } else {
               id(mode) = $MODE_FACES;
               id(request_weather).turn_on();
-              id(update_weather).execute();
+              id(update_weather_http).execute();
               id(ntp).update();
               id(epaper).update();
             }
 
-    - type: command
-      text: "Today's Agenda"
-      on_value:
-        then:
-          lambda: |-
-            id(mode) = $MODE_AGENDA;
-
-    - type: switch
-      text: Power save
+    - text: Power save
+      type: switch
       switch: power_saving_mode
       immediate_edit: true
 
-    - text: "Clock interval"
+    - text: Clock interval
       number: clock_interval_minutes
       type: number
       format: "%2.0f"
       value_lambda: |-
         return (id(clock_interval_minutes).state == 0 ? "1" : std::to_string(int(id(clock_interval_minutes).state))) + "m";
 
-    - type: command
-      text: "QR Contact Card"
+    - text: HTTP weather
+      type: switch
+      switch: http_weather_mode
+      immediate_edit: true
+
+    - text: System Info
+      type: command
+      on_value:
+        then:
+          lambda: |-
+            id(mode) = $MODE_DEVICE_INFO;
+            id(epaper).update();
+            id(epaper).do_full_update();
+            id(epaper).update();
+
+    - text: QR Contact Card
+      type: command
       on_value:
         then:
           lambda: |-
             id(mode) = $MODE_QR;
+            id(epaper).update();
+            id(epaper).do_full_update();
+            id(epaper).update();
 
-    - type: command
+    - text: HA Example
+      type: command
       # Home Assistant example service call.
       # https://esphome.io/components/api.html
-      text: HA Example
       on_value:
         then:
           - homeassistant.service:
@@ -991,8 +1019,8 @@ wifi:
         if (now.hour == 0 && now.minute == 0 || !now.is_valid()) {
           id(ntp).update();
         }
-        if ($ENABLE_WEATHER_API && id(request_weather).state) {
-          id(update_weather).execute();
+        if (id(http_weather_mode).state && id(request_weather).state) {
+          id(update_weather_http).execute();
         }
 
 improv_serial:
@@ -1106,7 +1134,7 @@ script:
           }
         }
 
-  - id: update_weather
+  - id: update_weather_http
     mode: single
     then:
       - lambda: |-
@@ -1492,6 +1520,11 @@ sensor:
     filters:
       - multiply: $BATTERY_VOLTAGE_DIVIDER
 
+text_sensor:
+  - platform: wifi_info
+    mac_address:
+      id: mac_address
+
 switch:
   # https://esphome.io/components/switch/index.html
   # https://esphome.io/components/switch/gpio.html
@@ -1504,25 +1537,34 @@ switch:
   - &alarm_enable
     platform: template
     id: alarm_a_enable
+    name: Alarm A enable
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
 
   - <<: *alarm_enable
     id: alarm_b_enable
+    name: Alarm B enable
 
   - platform: template
     id: power_saving_mode
+    name: Power saving mode
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: template
+    id: http_weather_mode
+    name: HTTP weather mode
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
 
   - platform: template
     id: request_weather
-    name: Watchy $ID Request Weather
+    name: Request Weather
     optimistic: true
 
   - platform: template
     id: api_connected
-    name: Watchy $ID Connected
+    name: Connected
     optimistic: true
 
 number:
@@ -1530,6 +1572,7 @@ number:
   - &alarmHour
     platform: template
     id: alarm_a_hour
+    name: Alarm A hour
     optimistic: true
     restore_value: true
     min_value: 0
@@ -1540,26 +1583,30 @@ number:
   - &alarmMin
     platform: template
     id: alarm_a_min
+    name: Alarm A min
     optimistic: true
     restore_value: true
     min_value: 0
     initial_value: 0
     max_value: 59
-    step: 10 ## Step size must be a multiple of 5
+    step: 15 ## Step size must be a multiple of 5
 
   - <<: *alarmHour
     id: alarm_b_hour
+    name: Alarm B hour
 
   - <<: *alarmMin
     id: alarm_b_min
+    name: Alarm B min
 
   - platform: template
     id: clock_interval_minutes
+    name: Clock interval minutes
     optimistic: true
     restore_value: true
     min_value: 0
     initial_value: 0
-    max_value: 10 ## Maximum cannot be more than alarm_a_min step above
+    max_value: 15 ## Maximum cannot be more than alarm_a_min step above
     step: 5 ## Step size must be a multiple of 5
 
 i2c:

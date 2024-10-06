@@ -1,4 +1,19 @@
-# ESPHome-for-Watchy
+# EPaper Smart-Watch Firmware
+
+Based on ESP32, Watchy and ESPHome.
+
+## Main Features
+
+<div style="text-align: center;">
+<img src="doc/mods/wrist-side-profile.jpeg" style="width: 180px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/agenda/next-event.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/agenda/event-notification.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/menu.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/11.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/ha_screenshot.jpg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
+</div>
+
+## Overview
 
 Main source code file is: [./watchy.yaml](./watchy.yaml)
 
@@ -6,24 +21,13 @@ Main source code file is: [./watchy.yaml](./watchy.yaml)
 
 This project is a complete working firmware, built upon [ESPHome](https://esphome.io/), with [single-file source-code](./watchy.yaml), full v3 hardware support, weather forecast, multiple faces, daily calendar agenda, [pixel-art MDI icons](https://pictogrammers.com/library/mdi/), 2x alarms, stop-watch timers, low-power-mode, firmware updatable over wifi and easy Home Assistant customisation. It is a complete, from-scratch, independent, drop-in replacement for the original Watchy firmware.
 
-## Faces
-
-Included faces (cycle through them using the top-right button):
-
-<div>
-<img src="doc/faces/5.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/faces/1.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/faces/7.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/faces/2.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/faces/8.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/faces/3.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-</div>
+It is **not** required to have your own Home Assistant server to use this firmware - the watch can operate as an independent device connecting directly to WiFi, public NTP servers and OpenWeatherMap.org.
 
 ## Daily Calendar Agenda with Notifications
 
 Sync daily agenda via Home Assistant [CalDAV](https://www.home-assistant.io/integrations/caldav/) or other integrations. See HA Automation configuration at end of this document.
 
-<div>
+<div style="text-align: center;">
 <img src="doc/agenda/full-page-agenda.jpeg" title="The agenda overview screen. Current events happening now are highlighted with dark background. The horizontal lines indicates the current time of day and the next upcoming event." style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/agenda/event-notification.jpeg" title="A the time of an event, 10-min before and 60-min before, a notification pop-up is shown with a buzzer alarm. The upcoming event has the time highlighted with a black background." style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/agenda/next-event.jpeg" title="The next upcoming event is shown above the time on the digital face." style="width: 240px; max-width: 95vw; max-height: 95vh" />
@@ -38,11 +42,24 @@ Press and hold the upper-right button for 3s to see the agenda overview.
 
 (Hover over the images above for alt-text explanations.)
 
+## Multiple Built-in Faces
+
+Included faces (cycle through them using the top-right button):
+
+<div style="text-align: center;">
+<img src="doc/faces/5.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/faces/1.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/faces/7.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/faces/2.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/faces/8.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+<img src="doc/faces/3.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
+
 ## Weather
 
 The watch shows a weather forecast over the upcoming 12 hours. This is a simple, practical, human-ergonomics amount of time for planning ahead using a wrist watch. Max-temp is currently based on `feels_like` forecast over 12 hours.
 
-<div>
+<div style="text-align: center;">
 <img src="doc/weather01.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/weather02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
@@ -59,7 +76,7 @@ When an alarm is enabled, the watch face will show alarm-check icon: <span style
 
 To silence a buzzing alarm, press the upper-left button.
 
-<div>
+<div style="text-align: center;">
   <img src="doc/menu.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
   <img src="doc/alarms.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
   <img src="doc/alarm-enabled.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
@@ -73,7 +90,7 @@ To silence a buzzing alarm, press the upper-left button.
 1. Press-and-hold (3s) to cancel last timer
 1. Press-and-hold (5s) to clear all timers and start over
 
-<div>
+<div style="text-align: center;">
 <img src="doc/11.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/12.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/14.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
@@ -82,11 +99,13 @@ To silence a buzzing alarm, press the upper-left button.
 
 The most recent active timer will also show on the digital clock face:
 
+<div style="text-align: center;">
 <img src="doc/active-timer.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
+</div>
 
 When the page is full, a button press will discard the oldest timer and start a new one at the bottom. All the other timers move up one slot, maintaining their letter-codes. In this example, A, which has been restarted, moves to the bottom. Then, on another press, B.
 
-<div>
+<div style="text-align: center;">
 <img src="doc/16.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/17.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/18.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
@@ -96,12 +115,12 @@ When the page is full, a button press will discard the oldest timer and start a 
 
 These are useful for wall-mounting older/spare Watchy modules:
 
-<div>
+<div style="text-align: center;">
 <img src="doc/faces/3.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/faces/4.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-## QR-Code Contact Card / ID Badge
+## QR Code Contact Card / ID Badge
 
 You know... just in case you accidentally find yourself at a meet-up or conference without a phone, tablet or business card and can't remember your own email or website addresses, don't panic, you have your watch!
 
@@ -109,10 +128,9 @@ You know... just in case you accidentally find yourself at a meet-up or conferen
 
 vCard, Website and RSS URL can be set in `secrets.yaml`.
 
-<div>
+<div style="text-align: center;">
 <img src="doc/qr-vcard.jpeg" title="vCard" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/qr-web.jpeg" title="Website" style="width: 240px; max-width: 95vw; max-height: 95vh" />
-<img src="doc/qr-rss.jpeg" title="RSS" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
 ## The Watch
@@ -123,11 +141,11 @@ vCard, Website and RSS URL can be set in `secrets.yaml`.
 
 Update: New (2024) v3 module arrived via [Mouser Electronics](https://au.mouser.com/ProductDetail/SQFMI/SQFMI-WATCHY-10?qs=DRkmTr78QARN9VSJRzqRxw%3D%3D). It has hardware changes including ESP32-S3, RTC and [rearranged pins](https://github.com/sqfmi/Watchy/compare/667d86737dd3dcedf67d83cf69553b28f4e1f38b..master).
 
-<div>
+<div style="text-align: center;">
 <img src="doc/mods/wrist-side-profile.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 </div>
 
-<div>
+<div style="text-align: center;">
 <img src="doc/v3/01.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/v3/02.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/v3/03.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
@@ -215,7 +233,7 @@ When in Settings menu:
 - Lower Left Button: Select/Save
 - Upper Left Button: Exit the menu
 
-<div>
+<div style="text-align: center;">
 <img src="doc/menu.jpeg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
 </div>
 
@@ -283,6 +301,12 @@ To upload new firmware/watchfaces to Watchy, you will need to enter **bootloader
 Follow these instructions:
 
 <https://esphome.io/guides/getting_started_hassio.html#connecting-your-device-to-home-assistant>
+
+Most watch options can be set through the Home Assistant web interface.
+
+<div>
+<img src="doc/ha_screenshot.jpg" style="width: 200px; max-width: 95vw; max-height: 95vh" />
+</div>
 
 ### Add your Calendar to Home Assistant
 
@@ -389,11 +413,13 @@ I have had the USB socket break off a previous watch so I added epoxy glue aroun
 
 Then I painted the back electronic components with silicone to keep dry and clean.
 
+<div style="text-align: center;">
 <img src="doc/mods/silicone.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
+</div>
 
 I discarded the huge, clumsy watch case that comes in the box! Threading a Garmin Fenix band through the Watchy PCB slots, I attached the battery to the band under the wrist area. This resulted in a hidden battery and thin watch profile.
 
-<div>
+<div style="text-align: center;">
 <img src="doc/mods/full-band.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/mods/battery-ductape.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
 <img src="doc/mods/battery-ductape-2.jpeg" style="width: 240px; max-width: 95vw; max-height: 95vh" />
@@ -414,7 +440,7 @@ The minor customisations for Watchy are:
 
   https://github.com/multipolygon/esphome/commit/6407a74ff9855d515cb16fef67f90c748f9800ea
 
-- Add a pubic `do_full_update()` method to trigger the full-refresh only at certain times of day - a full update clears away ghost pixels.
+- Add a public `do_full_update()` method to trigger the full-refresh only at certain times of day - a full update clears away ghost pixels.
 
   https://github.com/multipolygon/esphome/commit/ecf116058cc4b20007126f9099f4b07f4d46b9dd
 
