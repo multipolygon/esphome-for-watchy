@@ -1,5 +1,6 @@
 {
   "files.associations": {
-    "watchy.yaml": "esphome"
+    "watchy-v2.yaml": "esphome",
+    "watchy-v3.yaml": "esphome"
   }
 }

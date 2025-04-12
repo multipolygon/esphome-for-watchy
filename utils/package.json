@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "generate": "nodemon --watch ../watchy.yaml --watch ../config.yaml ./generate.ts"
+    "generate": "nodemon --watch ../watchy-v3.yaml --watch ../config.yaml ./generate.ts"
   },
   "dependencies": {
     "@types/node": "^22.5.0",

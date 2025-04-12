@@ -1,11 +1,12 @@
 // This is a simple script that will convert the v3 Watchy YAML to v2 settings
 // for backwars compatibility with other (older) hardware.
 
-import yaml, { YAMLSeq, YAMLMap } from "yaml";
 import * as fs from "fs";
 
+import yaml, { YAMLMap, YAMLSeq } from "yaml";
+
 export default () => {
-  const v3 = fs.readFileSync("../watchy.yaml", "utf8");
+  const v3 = fs.readFileSync("../watchy-v3.yaml", "utf8");
 
   const v2 = yaml.parseDocument(
     v3
@@ -34,9 +35,7 @@ export default () => {
     const isCharging = binarySensor.items.find(
       (x) =>
         x instanceof YAMLMap &&
-        x.items.find(
-          (pair) => pair.key.value == "id" && pair.value.value == "is_charging"
-        )
+        x.items.find((pair) => pair.key.value == "id" && pair.value.value == "is_charging")
     );
     if (isCharging instanceof YAMLMap) {
       isCharging.delete("pin");
@@ -44,5 +43,5 @@ export default () => {
     }
   }
 
-  fs.writeFileSync("../v2-watchy.yaml", v2.toString());
+  fs.writeFileSync("../watchy-v2.yaml", v2.toString());
 };

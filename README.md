@@ -1,6 +1,7 @@
-# EPaper Smart-Watch Firmware
+# ESP32 EPaper Smart-Watch
 
-Based on ESP32, Watchy and ESPHome.
+- Firmware for Watchy v3 and v2
+- Based on the ESPHome Arduino framework.
 
 ## Main Features
 
@@ -15,11 +16,14 @@ Based on ESP32, Watchy and ESPHome.
 
 ## Overview
 
-Main source code file is: [./watchy.yaml](./watchy.yaml)
+Main source code file is:
+
+- v3 hardware ESP32-S3: [./watchy-v3.yaml](./watchy-v3.yaml) (latest)
+- v2 hardware ES32: [./watchy-v2.yaml](./watchy-v2.yaml)
 
 [Watchy](https://watchy.sqfmi.com/) is an [open-hardware](https://watchy.sqfmi.com/docs/hardware), ESP32 wrist watch with e-paper display designed by SQFMI.
 
-This project is a complete working firmware, built upon [ESPHome](https://esphome.io/), with [single-file source-code](./watchy.yaml), full v3 hardware support, weather forecast, multiple faces, daily calendar agenda, [pixel-art MDI icons](https://pictogrammers.com/library/mdi/), 2x alarms, stop-watch timers, low-power-mode, firmware updatable over wifi and easy Home Assistant customisation. It is a complete, from-scratch, independent, drop-in replacement for the original Watchy firmware.
+This project is a complete working firmware, built upon [ESPHome](https://esphome.io/), with [single-file source-code](./watchy-v3.yaml), full v3 hardware support, weather forecast, multiple faces, daily calendar agenda, [pixel-art MDI icons](https://pictogrammers.com/library/mdi/), 2x alarms, stop-watch timers, low-power-mode, firmware updatable over wifi and easy Home Assistant customisation. It is a complete, from-scratch, independent, drop-in replacement for the original Watchy firmware.
 
 It is **not** required to have your own Home Assistant server to use this firmware - the watch can operate as an independent device connecting directly to WiFi, public NTP servers and OpenWeatherMap.org.
 
@@ -137,7 +141,7 @@ vCard, Website and RSS URL can be set in `secrets.yaml`.
 
 ### Watchy hardware v3 - NEW 2024!
 
-- Watchy v3: [./watchy.yaml](./watchy.yaml)
+- Watchy v3: [./watchy-v3.yaml](./watchy-v3.yaml)
 
 Update: New (2024) v3 module arrived via [Mouser Electronics](https://au.mouser.com/ProductDetail/SQFMI/SQFMI-WATCHY-10?qs=DRkmTr78QARN9VSJRzqRxw%3D%3D). It has hardware changes including ESP32-S3, RTC and [rearranged pins](https://github.com/sqfmi/Watchy/compare/667d86737dd3dcedf67d83cf69553b28f4e1f38b..master).
 
@@ -156,7 +160,7 @@ Update: New (2024) v3 module arrived via [Mouser Electronics](https://au.mouser.
 
 ### Watchy hardware v2
 
-A backwards compatible version is also available for older v2 hardware: [./v2-watchy.yaml](./v2-watchy.yaml)
+A backwards compatible version is also available for older v2 hardware: [./watchy-v2.yaml](./watchy-v2.yaml)
 
 ## About ESPHome
 
@@ -194,7 +198,7 @@ Intentionally, this project does not include any on-watch user settings screens 
 1. Sign up at https://openweathermap.org/ to get an API key
 1. `cp config-example.yaml config.yaml`
 1. Edit your `config.yaml` file
-1. Connect your Watchy to USB and run `esphome run watchy.yaml`
+1. Connect your Watchy to USB and run `esphome run watchy-v3.yaml`
 1. Thats it!
 
 ## User Guide
@@ -287,7 +291,7 @@ To upload new firmware/watchfaces to Watchy, you will need to enter **bootloader
 
 1. `cp config-example.yaml config.yaml`
 1. Edit your config.yaml
-1. `esphome -s ID 1 run watchy.yaml`
+1. `esphome run watchy-v3.yaml`
 
 ### Reset Watchy (v3 only)
 

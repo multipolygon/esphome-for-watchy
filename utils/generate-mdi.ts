@@ -2,7 +2,7 @@ import * as fs from "fs";
 
 export default () => {
   const required = fs
-    .readFileSync("../watchy.yaml")
+    .readFileSync("../watchy-v3.yaml")
     .toString()
     .match(/"\$mdi\w+?"/g)
     .map((x) => x.replaceAll('"', "").replaceAll("$", ""));
@@ -24,14 +24,7 @@ export default () => {
     .split(")")[0]
     .trim()
     .split("\n")
-    .map((l) =>
-      l
-        .trim()
-        .replaceAll('"', "")
-        .replaceAll(",", "")
-        .replaceAll("-", " ")
-        .split(": ")
-    )
+    .map((l) => l.trim().replaceAll('"', "").replaceAll(",", "").replaceAll("-", " ").split(": "))
     .map(([name, code]) => [camelize("mdi " + name), code])
     .filter(([name, code]) => required.includes(name));
 
@@ -43,8 +36,6 @@ export default () => {
   );
   fs.writeFileSync(
     "../mdi.h",
-    x
-      .map(([name, code]) => `const char *${name} = "\\U000${code}";`)
-      .join("\n") + "\n"
+    x.map(([name, code]) => `const char *${name} = "\\U000${code}";`).join("\n") + "\n"
   );
 };
