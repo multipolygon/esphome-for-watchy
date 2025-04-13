@@ -268,14 +268,6 @@ Save the files to `fonts` directory.
 https://esphome.io/guides/installing_esphome.html#mac
 
     brew install esphome
-    brew install pillow
-    brew unlink pillow
-
-Download:
-https://raw.githubusercontent.com/Homebrew/homebrew-core/fc831c5d76dc2eb6dbe2265ca9b6ca93d27140bc/Formula/p/pillow.rb
-
-    brew install ./fonts/pillow.rb
-    brew pin pillow
 
 ### Enter Watchy Bootloader Mode (v3 only)
 
@@ -322,43 +314,7 @@ Instructions:
 
 Then create an Automation to send agenda to Watchy:
 
-```
-alias: Watchy Calendar Agenda
-description: ""
-trigger:
-  - platform: state
-    entity_id:
-      - binary_sensor.watchy_0_request_agenda
-    to: "on"
-condition: []
-action:
-  - response_variable: agenda
-    metadata: {}
-    target:
-      entity_id:
-        - calendar.main
-        - calendar.birthdays
-    action: calendar.get_events
-    data_template:
-      start_date_time: "{{ today_at(\"00:00:00\") }}"
-      end_date_time: "{{ today_at(\"23:59:59\") }}"
-  - alias: Parse data
-    variables:
-      simplified: |
-        [
-          {% for i in (agenda['calendar.main'].events + agenda['calendar.birthdays'].events) | sort(attribute="start") %}
-            {% set start = as_datetime(i.start) %}
-            {% set end = as_datetime(i.end) %}
-            {% if start.day == now().day %}
-              {{ [(start.hour * 60 + start.minute), (end.hour * 60 + end.minute) if end.day == now().day else (24 * 60), (i.summary | trim)] | to_json }},
-            {% endif %}
-          {% endfor %}
-        ]
-  - data_template:
-      agenda_json: "{{ simplified | to_json }}"
-    action: esphome.watchy_v3_id0_set_agenda
-mode: single
-```
+[./automations/watchy-agenda.yaml](./automations/watchy-agenda.yaml)
 
 ### Weather forecast automation
 
@@ -377,35 +333,7 @@ rest_command:
 
 Create an automation:
 
-```
-alias: Watchy Weather
-description: ""
-trigger:
-  - platform: state
-    entity_id:
-      - binary_sensor.watchy_0_request_weather
-    to: "on"
-condition: []
-action:
-  - action: rest_command.openweathermap_forecast
-    response_variable: response
-    data: {}
-  - if:
-      - condition: template
-        value_template: "{{ response.status == 200 }}"
-    then:
-      - alias: Parse data
-        variables:
-          simplified: >
-            { "list": [ {% for i in response.content.list %} {{ { 'dt': i.dt,
-            'main': { 'feels_like': i.main.feels_like }, 'weather': [{ 'id':
-            i.weather.0.id }], 'sys': { 'pod': i.sys.pod } } }} {{ "," if not
-            loop.last }} {% endfor %} ] }
-      - action: esphome.watchy_v3_id0_set_weather
-        data_template:
-          weather_json: "{{ simplified }}"
-mode: single
-```
+[./automations/watchy-weather.yaml](./automations/watchy-weather.yaml)
 
 <https://www.home-assistant.io/integrations/calendar/#action-calendarget_events>
 

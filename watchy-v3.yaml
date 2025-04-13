@@ -45,6 +45,8 @@ esphome:
 
           randomSeed(utcnow.timestamp + id(weather_times)[0]);
 
+          id(show_agenda) = false;
+
           if (id(mode) == $MODE_MENU) {
             id(mode) = $MODE_FACES;
           }
@@ -528,8 +530,8 @@ display:
 
         it.menu(28, 2, id(menu), w, h-4);
         it.print(w + 8, 0 - 5, id(mdi_small), TextAlign::TOP_RIGHT, "$mdiArrowUpThin");
-        it.print(w + 8, h + 8, id(mdi_small), TextAlign::BOTTOM_RIGHT, "$mdiArrowDownThin");
-        it.print(0 - 2, h + 4, id(mdi_small), TextAlign::BOTTOM_LEFT, "$mdiCheckCircleOutline");
+        it.print(w + 8, h + 6, id(mdi_small), TextAlign::BOTTOM_RIGHT, "$mdiArrowDownThin");
+        it.print(0 - 2, h + 2, id(mdi_small), TextAlign::BOTTOM_LEFT, "$mdiCheckCircleOutline");
         it.print(0 - 5, 0 - 3, id(mdi_small), TextAlign::TOP_LEFT, "$mdiArrowLeftTop");
 
       } else if (id(mode) == $MODE_DP) {
@@ -568,9 +570,10 @@ display:
         it.qr_code(x, y, qr, Color(255,255,255), scale);
       }
 
-      if (id(mode) == $MODE_AGENDA || (id(alarm_buzzing) && id(agenda_alarm_time) != -1)) {
+      if (id(mode) == $MODE_AGENDA || id(show_agenda) || (id(alarm_buzzing) && id(agenda_alarm_time) != -1)) {
         
-        if (id(mode) == $MODE_AGENDA) {
+        if (id(mode) == $MODE_AGENDA || id(show_agenda)) {
+          it.filled_rectangle(0, 0, w, h, WHITE); // clear entire background - optional
           it.printf(0, 0, id(mdi_small), TextAlign::TOP_LEFT, "%s", leftStatusIcons);
           it.printf(w, 0, id(mdi_small), TextAlign::TOP_RIGHT, "%s", rightStatusIcons);
         }
@@ -609,7 +612,7 @@ display:
           l = (h - headingBoxHeight - textBoxHeight) / 2;
         }
 
-        it.filled_rectangle(0, l-4, w, headingBoxHeight + textBoxHeight + 8, WHITE);
+        it.filled_rectangle(0, l-8, w, headingBoxHeight + textBoxHeight + 12, WHITE); // clear background
         it.filled_rectangle(0, l, w, headingBoxHeight, BLACK);
         it.rectangle(0, l, w, headingBoxHeight + textBoxHeight);
         it.rectangle(1, l+1, w-2, headingBoxHeight + textBoxHeight - 2);
@@ -825,6 +828,7 @@ binary_sensor:
                 id(wi_fi).enable();
               }
             }
+            id(show_agenda) = false;
             id(epaper).update();
 
   - id: power_saving_mode_button
@@ -952,7 +956,7 @@ binary_sensor:
     on_press:
       - lambda: |-
           id(sleep_timeout) = $WAKE_TIME;
-          id(mode) = $MODE_AGENDA;
+          id(show_agenda) = true;
           id(epaper).update();
 
   ## Lower Right ##
@@ -1100,6 +1104,7 @@ script:
         DeserializationError jsonErr = deserializeJson(doc, id(agenda));
 
         const int prevAgendaTime = id(next_agenda_start);
+        int count = 0;
 
         id(next_agenda_start) = -1;
         id(next_agenda_end) = -1;
@@ -1110,6 +1115,7 @@ script:
           const int tnow = now.hour * 60 + now.minute;
 
           for (JsonArray elem : doc.as<JsonArray>()) {
+            count++;
             const int tstart = elem[0].as<int>();
             const int tend = elem[1].as<int>();
             const String title = elem[2].as<String>();
@@ -1125,11 +1131,14 @@ script:
             }
           }
 
-          if (
+          if (count == 0 && id(show_agenda)) {
+            id(show_agenda) = false;
+            id(epaper).update();
+          } else if (
             prevAgendaTime == -1 && id(next_agenda_start) != -1
           ) {
             // There are new agenda items so update the display mode:
-            id(mode) = $MODE_AGENDA;
+            id(show_agenda) = true;
             id(epaper).update();
           }
         }
@@ -1339,6 +1348,10 @@ globals:
     restore_value: yes
     max_restore_data_length: 32
     initial_value: '""'
+  - id: show_agenda
+    type: bool
+    restore_value: yes
+    initial_value: "false"
 
 font:
   # https://esphome.io/components/display/fonts.html

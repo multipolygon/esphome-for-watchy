@@ -1,0 +1,31 @@
+alias: Watchy Weather
+description: ""
+triggers:
+  - entity_id:
+      - switch.watchy_56ae04_request_weather
+    to: "on"
+    trigger: state
+conditions: []
+actions:
+  - action: rest_command.openweathermap_forecast
+    response_variable: response
+    data: {}
+  - if:
+      - condition: template
+        value_template: "{{ response.status == 200 }}"
+    then:
+      - alias: Parse data
+        variables:
+          simplified: >
+            { "list": [ {% for i in response.content.list %} {{ { 'dt': i.dt,
+            'main': { 'feels_like': i.main.feels_like }, 'weather': [{ 'id':
+            i.weather.0.id }], 'sys': { 'pod': i.sys.pod } } }} {{ "," if not
+            loop.last }} {% endfor %} ] }
+      - action: persistent_notification.create
+        data:
+          message: "{{ simplified }}"
+        enabled: false
+      - action: esphome.watchy_56ae04_set_weather
+        data_template:
+          weather_json: "{{ simplified }}"
+mode: single

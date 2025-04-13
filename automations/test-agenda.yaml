@@ -1,0 +1,14 @@
+alias: Watchy Agenda Test Data
+description: ""
+mode: single
+triggers: []
+conditions: []
+actions:
+  - data_template:
+      agenda_json: |
+        [
+          [00,1440,"Test 1"],
+          [00,1440,"Test 2"],
+          [1320,1380,"Test Three"]
+        ]
+    action: esphome.watchy_56ae04_set_agenda
