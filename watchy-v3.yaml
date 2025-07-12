@@ -1152,7 +1152,7 @@ script:
           # https://esphome.io/components/http_request.html#http-request-get-action
           # https://openweathermap.org/forecast5
           url: http://api.openweathermap.org/data/2.5/forecast?cnt=4&id=$WEATHER_CITY_ID&units=$UNITS&lang=$LANG&appid=$WEATHER_KEY
-          headers:
+          request_headers:
             Content-Type: application/json
           capture_response: true
           max_response_buffer_size: 3kB
