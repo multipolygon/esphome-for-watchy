@@ -12,10 +12,10 @@ substitutions:
   MODE_TIMERS: "1"
   MODE_MENU: "2"
   MODE_QR: "3"
-  MODE_DP: "4"
-  MODE_WUN: "5"
-  MODE_AGENDA: "6"
-  MODE_DEVICE_INFO: "7"
+  # MODE_DP: "4"
+  # MODE_WUN: "5"
+  MODE_AGENDA: "4"
+  MODE_DEVICE_INFO: "5"
   AGENDA_REMINDER_1: "60" # min
   AGENDA_REMINDER_2: "10" # min
   AGENDA_JSON_BYTES: "1024"
@@ -87,18 +87,18 @@ esphome:
               id(wi_fi).enable();
             }
 
-            if (id(mode) == $MODE_FACES
-                && id(sleep_timeout) == 0
-                && !id(chime)
-                && !id(alarm_buzzing)
-            ) {
-              auto r = random(100);
-              if (0 == r) {
-                id(mode) = $MODE_DP;
-              } else if (1 == r) {
-                id(mode) = $MODE_WUN;
-              }
-            }
+            // if (id(mode) == $MODE_FACES
+            //     && id(sleep_timeout) == 0
+            //     && !id(chime)
+            //     && !id(alarm_buzzing)
+            // ) {
+            //   auto r = random(100);
+            //   if (0 == r) {
+            //     id(mode) = $MODE_DP;
+            //   } else if (1 == r) {
+            //     id(mode) = $MODE_WUN;
+            //   }
+            // }
           }
 
           id(epaper).update();
@@ -534,16 +534,16 @@ display:
         it.print(0 - 2, h + 2, id(mdi_small), TextAlign::BOTTOM_LEFT, "$mdiCheckCircleOutline");
         it.print(0 - 5, 0 - 3, id(mdi_small), TextAlign::TOP_LEFT, "$mdiArrowLeftTop");
 
-      } else if (id(mode) == $MODE_DP) {
+      // } else if (id(mode) == $MODE_DP) {
         
-        id(mode) = $MODE_FACES;
-        it.print(w/2, h/2, id(date_font), TextAlign::BOTTOM_CENTER, "DON'T");
-        it.print(w/2, h/2, id(date_font), TextAlign::TOP_CENTER, "PANIC!");
+      //   id(mode) = $MODE_FACES;
+      //   it.print(w/2, h/2, id(date_font), TextAlign::BOTTOM_CENTER, "DON'T");
+      //   it.print(w/2, h/2, id(date_font), TextAlign::TOP_CENTER, "PANIC!");
 
-      } else if (id(mode) == $MODE_WUN) {
+      // } else if (id(mode) == $MODE_WUN) {
         
-        id(mode) = $MODE_FACES;
-        it.print(0, 0, id(small_font), TextAlign::TOP_LEFT, "Wake up, Neo...");
+      //   id(mode) = $MODE_FACES;
+      //   it.print(0, 0, id(small_font), TextAlign::TOP_LEFT, "Wake up, Neo...");
 
       } else if (id(mode) == $MODE_QR) {
         

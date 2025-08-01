@@ -2,5 +2,6 @@
   "files.associations": {
     "watchy-v2.yaml": "esphome",
     "watchy-v3.yaml": "esphome"
-  }
+  },
+  "idf.pythonInstallPath": "/usr/bin/python3"
 }
