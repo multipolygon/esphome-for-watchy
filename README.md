@@ -1,5 +1,8 @@
 # ESP32 EPaper Smart-Watch
 
+Meffi: Try to update this nice Project with multiple WLAN, an VPN to connect to my Local HA end custemice to my ideas. We will see :D
+
+
 - Firmware for Watchy v3 and v2
 - Based on the ESPHome Arduino framework.
 
