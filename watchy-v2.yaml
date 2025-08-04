@@ -1677,7 +1677,7 @@ api:
   # https://esphome.io/components/api.html
   reboot_timeout: 0s
   encryption:
-    key: $HOME_ASSISTANT_API_KEY
+    key: "jRRvRXgicJm9biu4JGPErYB+PoEw3AscZ9isGoKRLRY="
   on_client_connected:
     - lambda: |-
         ESP_LOGI("watchy", "API connected!");

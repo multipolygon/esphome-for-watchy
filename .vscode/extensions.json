@@ -1,0 +1,6 @@
+{
+    "recommendations": [
+        "thibmaek.vsc-esphome-snippets",
+        "esphome.esphome-vscode"
+    ]
+}
