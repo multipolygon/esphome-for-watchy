@@ -2,7 +2,7 @@ alias: Watchy Calendar Agenda
 description: ""
 triggers:
   - entity_id:
-      - switch.watchy_56ae04_connected
+      - switch.watchy_15dd6c_connected
     to: "on"
     trigger: state
 conditions: []
@@ -11,8 +11,8 @@ actions:
     metadata: {}
     target:
       entity_id:
-        - calendar.main
-        - calendar.birthdays
+        - calendar.familie
+        - calendar.bgz
     action: calendar.get_events
     data_template:
       start_date_time: '{{ today_at("00:00:00") }}'
@@ -21,20 +21,20 @@ actions:
     variables:
       simplified: |
         [
-          {% for i in (agenda['calendar.main'].events + agenda['calendar.birthdays'].events) | sort(attribute="start") %}
+          {% for i in (agenda['calendar.familie'].events + agenda['calendar.bgz'].events) | sort(attribute="start") %}
             {% set start = as_datetime(i.start) %}
             {% set end = as_datetime(i.end) %}
-            {% if start.day == now().day %}
+            {% if 1 == 1 %}
               {{ [(start.hour * 60 + start.minute), (end.hour * 60 + end.minute) if end.day == now().day else (24 * 60), (i.summary | trim)] | to_json }},
             {% endif %}
           {% endfor %}
         ]
   - action: persistent_notification.create
-    enabled: false
+    enabled: true
     data_template:
       message: |
         {{ simplified | to_json }}
   - data_template:
       agenda_json: "{{ simplified | to_json }}"
-    action: esphome.watchy_56ae04_set_agenda
+    action: esphome.watchy_15dd6c_set_agenda
 mode: single

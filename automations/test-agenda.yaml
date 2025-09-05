@@ -11,4 +11,4 @@ actions:
           [00,1440,"Test 2"],
           [1320,1380,"Test Three"]
         ]
-    action: esphome.watchy_56ae04_set_agenda
+    action: esphome.watchy_15dd6c_set_agenda

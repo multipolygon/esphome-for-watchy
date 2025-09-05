@@ -12,8 +12,8 @@ substitutions:
   MODE_TIMERS: "1"
   MODE_MENU: "2"
   MODE_QR: "3"
-  # MODE_DP: "4"
-  # MODE_WUN: "5"
+  BUZZER_DURATION_1: "125"
+  BUZZER_DURATION_2: "200"
   MODE_AGENDA: "4"
   MODE_DEVICE_INFO: "5"
   AGENDA_REMINDER_1: "60" # min
@@ -22,7 +22,7 @@ substitutions:
 
 logger:
   # https://esphome.io/components/logger.html#log-levels
-  level: NONE
+  level: DEBUG
 
 esphome:
   # https://esphome.io/components/esphome.html#esphome-core-configuration
@@ -110,7 +110,7 @@ esphome:
             lambda: return id(chime) && !id(alarm_buzzing);
           then:
             - switch.turn_on: buzzer
-            - delay: 250ms
+            - delay: BUZZER_DURATION_1
             - switch.turn_off: buzzer
 
 display:
@@ -1083,11 +1083,11 @@ script:
             lambda: return id(alarm_buzzing);
           then:
             - switch.turn_on: buzzer
-            - delay: 250ms
+            - delay: BUZZER_DURATION_1
             - switch.turn_off: buzzer
-            - delay: 200ms
+            - delay: BUZZER_DURATION_2
             - switch.turn_on: buzzer
-            - delay: 250ms
+            - delay: BUZZER_DURATION_1
             - switch.turn_off: buzzer
 
   - id: parse_agenda
@@ -1634,7 +1634,7 @@ spi:
 
 ota:
   # https://esphome.io/components/ota/
-  password: $OTA_PASSWORD
+  password: !secret OTA_PASSWORD
   platform: esphome
 
 http_request:

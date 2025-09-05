@@ -2,7 +2,7 @@ alias: Watchy Weather
 description: ""
 triggers:
   - entity_id:
-      - switch.watchy_56ae04_request_weather
+      - switch.watchy_15dd6c_request_weather
     to: "on"
     trigger: state
 conditions: []
@@ -25,7 +25,7 @@ actions:
         data:
           message: "{{ simplified }}"
         enabled: false
-      - action: esphome.watchy_56ae04_set_weather
+      - action: esphome.watchy_15dd6c_set_weather
         data_template:
           weather_json: "{{ simplified }}"
 mode: single
